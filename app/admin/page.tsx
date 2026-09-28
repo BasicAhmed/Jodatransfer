@@ -120,8 +120,22 @@ export default function AdminPage() {
             setError("");
             try {
               await signInWithEmailAndPassword(auth!, email, password);
-            } catch {
-              setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+            } catch (err) {
+              const code = (err as { code?: string })?.code ?? "unknown";
+              const messages: Record<string, string> = {
+                "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+                "auth/wrong-password": "كلمة المرور غير صحيحة.",
+                "auth/user-not-found": "ما في حساب بهذا البريد — أضفه من Firebase → Authentication → Users.",
+                "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة.",
+                "auth/operation-not-allowed": "تسجيل الدخول بالبريد غير مفعّل — فعّل Email/Password في Firebase → Authentication.",
+                "auth/configuration-not-found": "Authentication غير مفعّل في مشروع Firebase — اضغط Get started في Authentication.",
+                "auth/invalid-api-key": "مفتاح API غلط — راجع NEXT_PUBLIC_FIREBASE_API_KEY في Vercel.",
+                "auth/api-key-not-valid.-please-pass-a-valid-api-key.": "مفتاح API غلط — راجع NEXT_PUBLIC_FIREBASE_API_KEY في Vercel.",
+                "auth/unauthorized-domain": "الدومين غير مسموح — أضفه في Firebase → Authentication → Settings → Authorized domains.",
+                "auth/too-many-requests": "محاولات كثيرة — انتظر شوية وجرب تاني.",
+                "auth/network-request-failed": "مشكلة في الاتصال بالإنترنت.",
+              };
+              setError(`${messages[code] ?? "تعذر تسجيل الدخول."} (${code})`);
             }
           }}
           className="mt-6 space-y-3"
