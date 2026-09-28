@@ -10,7 +10,7 @@ export interface ShareCardParams {
   toCode: string;
   amountSent: string; // pre-formatted, e.g. "5,000.00"
   amountReceived: string;
-  rateLine: string; // e.g. "1 MYR = 4.05 ZAR"
+  rateLine: string; // e.g. "1 MYR = 1590 SDG"
   trendLabel?: string; // e.g. "▲ زيادة" or "▼ انخفاض"
   trendColor: "good" | "bad" | "neutral"; // "good" renders emerald, "bad" renders red
   updatedCaption?: string; // e.g. "آخر تحديث للسعر: منذ 3 ساعة"

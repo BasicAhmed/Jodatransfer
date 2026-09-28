@@ -1,4 +1,4 @@
-export type CurrencyCode = "SDG" | "ZAR" | "EGP" | "MYR" | "SAR" | "QAR" | "AED" | "USDT";
+export type CurrencyCode = "SDG" | "MYR" | "EGP" | "RUB" | "USDT" | "AED" | "SAR";
 
 export interface CurrencyInfo {
   code: CurrencyCode;
@@ -8,13 +8,12 @@ export interface CurrencyInfo {
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
   SDG: { code: "SDG", name: "السودان", flag: "🇸🇩" },
-  ZAR: { code: "ZAR", name: "جنوب أفريقيا", flag: "🇿🇦" },
-  EGP: { code: "EGP", name: "مصر", flag: "🇪🇬" },
   MYR: { code: "MYR", name: "ماليزيا", flag: "🇲🇾" },
-  SAR: { code: "SAR", name: "السعودية", flag: "🇸🇦" },
-  QAR: { code: "QAR", name: "قطر", flag: "🇶🇦" },
-  AED: { code: "AED", name: "الإمارات", flag: "🇦🇪" },
+  EGP: { code: "EGP", name: "مصر", flag: "🇪🇬" },
+  RUB: { code: "RUB", name: "روسيا", flag: "🇷🇺" },
   USDT: { code: "USDT", name: "USDT (تيثر)", flag: "₮" },
+  AED: { code: "AED", name: "الإمارات", flag: "🇦🇪" },
+  SAR: { code: "SAR", name: "السعودية", flag: "🇸🇦" },
 };
 
 export interface CurrencyPair {
@@ -28,23 +27,12 @@ export interface CurrencyPair {
  *  better" distinction. Add a currency's whole route list here once; both
  *  directions become available automatically. */
 export const PAIRS: CurrencyPair[] = [
-  { a: "SDG", b: "ZAR" },
-  { a: "SDG", b: "EGP" },
   { a: "SDG", b: "MYR" },
-  { a: "SDG", b: "SAR" },
+  { a: "SDG", b: "EGP" },
+  { a: "RUB", b: "USDT" },
   { a: "SDG", b: "USDT" },
-  { a: "SDG", b: "QAR" },
   { a: "SDG", b: "AED" },
-  { a: "EGP", b: "ZAR" },
-  { a: "EGP", b: "MYR" },
-  { a: "SAR", b: "MYR" },
-  { a: "QAR", b: "MYR" },
-  { a: "AED", b: "MYR" },
-  { a: "ZAR", b: "MYR" },
-  { a: "ZAR", b: "SAR" },
-  { a: "ZAR", b: "QAR" },
-  { a: "ZAR", b: "AED" },
-  { a: "ZAR", b: "USDT" },
+  { a: "SDG", b: "SAR" },
 ];
 
 export function findPair(x: CurrencyCode, y: CurrencyCode): CurrencyPair | undefined {

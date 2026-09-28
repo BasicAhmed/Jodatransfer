@@ -300,13 +300,11 @@ export async function updateRatesFromLiveFx(): Promise<FxUpdateResult> {
   return { updated, skipped };
 }
 
-/** Converts an amount between any two of Jodatransfer's currencies, using
- *  whatever pairs are available. Uses the direct pair if one exists;
- *  otherwise bridges through ZAR, since ZAR has a direct pair to every
- *  other currency in the corridor graph. Returns null only if a required
- *  leg genuinely isn't priced yet (shouldn't happen once the site has real
- *  data, but this is customer-facing math so it fails safe, not silently
- *  wrong). */
+/** Converts an amount between any two of Jodatransfer's currencies. Uses the
+ *  direct pair if one exists; otherwise finds the shortest chain of pairs
+ *  (e.g. MYR → SDG → USDT, or RUB → USDT → SDG → EGP). Returns null only if
+ *  a required leg isn't priced — customer-facing math fails safe, not
+ *  silently wrong. */
 export function convertBetween(
   amount: number,
   from: CurrencyCode,
@@ -315,16 +313,35 @@ export function convertBetween(
 ): number | null {
   if (from === to) return amount;
 
-  const applyLeg = (amt: number, legFrom: CurrencyCode, legTo: CurrencyCode): number | null => {
+  const neighbours = (c: CurrencyCode): CurrencyCode[] =>
+    PAIRS.filter((p) => p.a === c || p.b === c).map((p) => (p.a === c ? p.b : p.a));
+
+  // Breadth-first search for the shortest route through the corridor graph.
+  const prev = new Map<CurrencyCode, CurrencyCode>();
+  const queue: CurrencyCode[] = [from];
+  const seen = new Set<CurrencyCode>([from]);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (cur === to) break;
+    for (const n of neighbours(cur)) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      prev.set(n, cur);
+      queue.push(n);
+    }
+  }
+  if (!seen.has(to)) return null;
+
+  const path: CurrencyCode[] = [to];
+  while (path[0] !== from) path.unshift(prev.get(path[0])!);
+
+  let amt = amount;
+  for (let i = 0; i < path.length - 1; i++) {
+    const legFrom = path[i];
+    const legTo = path[i + 1];
     const row = rates.find((r) => r.from === legFrom && r.to === legTo);
     if (!row) return null;
-    return isMultiplyCorridor(legFrom, legTo) ? amt * row.rate : amt / row.rate;
-  };
-
-  const direct = applyLeg(amount, from, to);
-  if (direct !== null) return direct;
-
-  const viaZar = applyLeg(amount, from, "ZAR");
-  if (viaZar === null) return null;
-  return applyLeg(viaZar, "ZAR", to);
+    amt = isMultiplyCorridor(legFrom, legTo) ? amt * row.rate : amt / row.rate;
+  }
+  return amt;
 }

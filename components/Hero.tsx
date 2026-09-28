@@ -14,7 +14,7 @@ export default function Hero() {
           transition={{ duration: 0.5 }}
           className="eyebrow"
         >
-          موثوق من الطلاب في 7 دول
+          موثوق من الطلاب في 6 دول
         </motion.p>
 
         <motion.h1
@@ -34,9 +34,9 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mt-6 max-w-xl text-base text-muted sm:text-lg"
         >
-          Jodatransfer يحول قروشك بين السودان ومصر والسعودية والإمارات من جهة،
-          وجنوب أفريقيا وماليزيا من جهة أخرى — مصمم للطلاب اللي محتاجين
-          سرعة وسعر ظابط، من دون جرجرة.
+          Jodatransfer يحول قروشك من السوداني إلى ماليزيا ومصر والإمارات
+          والسعودية و USDT والعكس، وكمان الروبل مقابل USDT — مصمم للطلاب
+          اللي محتاجين سرعة وسعر ظابط، من دون جرجرة.
         </motion.p>
 
         <motion.div
@@ -68,7 +68,7 @@ export default function Hero() {
           className="mt-14 grid w-full max-w-2xl grid-cols-3 gap-6 border-t border-border pt-8 text-center"
         >
           {[
-            ["7", "دول"],
+            ["6", "ممرات تحويل"],
             ["أقل من 30 دقيقة", "متوسط التحويل"],
             ["واتساب", "دعم فوري"],
           ].map(([stat, label]) => (

@@ -1,22 +1,35 @@
 {
-  "note": "PLACEHOLDER MARKET PRICES — replace with real figures in /admin before launch. Each pair below has ONE true market price, quoted as units of the first currency per 1 unit of the second (e.g. SDG/ZAR = 345 means 345 SDG = 1 ZAR). The site derives BOTH directions from it automatically: first→second divides by marketPrice*(1+margin), second→first multiplies by marketPrice*(1-margin) — same margin percentage, worse than fair market both ways, exactly like a real buy/sell spread. Default margin is 3.5%, editable in /admin. ZAR-SAR, ZAR-QAR, ZAR-AED, ZAR-USDT, SDG-QAR, and SDG-AED are brand new corridors — their marketPrice values are rough cross-rate estimates only, verify and update every one in /admin before going live.",
+  "note": "PLACEHOLDER MARKET PRICES — replace with real figures in /admin (or run 'update now') before launch. Each pair has ONE market price, quoted as units of the first currency per 1 unit of the second (e.g. SDG/MYR = 1590 means 1590 SDG = 1 MYR). Both directions are derived automatically with the margin set in /admin.",
   "rates": [
-    { "from": "SDG", "to": "ZAR", "marketPrice": 345 },
-    { "from": "SDG", "to": "EGP", "marketPrice": 128 },
-    { "from": "SDG", "to": "MYR", "marketPrice": 1590 },
-    { "from": "SDG", "to": "SAR", "marketPrice": 1667 },
-    { "from": "SDG", "to": "USDT", "marketPrice": 6250 },
-    { "from": "SDG", "to": "QAR", "marketPrice": 1925 },
-    { "from": "SDG", "to": "AED", "marketPrice": 1336 },
-    { "from": "EGP", "to": "ZAR", "marketPrice": 2.51 },
-    { "from": "EGP", "to": "MYR", "marketPrice": 12.08 },
-    { "from": "SAR", "to": "MYR", "marketPrice": 1.095 },
-    { "from": "QAR", "to": "MYR", "marketPrice": 0.826 },
-    { "from": "AED", "to": "MYR", "marketPrice": 1.19 },
-    { "from": "ZAR", "to": "MYR", "marketPrice": 4.611 },
-    { "from": "ZAR", "to": "SAR", "marketPrice": 4.832 },
-    { "from": "ZAR", "to": "QAR", "marketPrice": 5.582 },
-    { "from": "ZAR", "to": "AED", "marketPrice": 3.874 },
-    { "from": "ZAR", "to": "USDT", "marketPrice": 18.12 }
+    {
+      "from": "SDG",
+      "to": "MYR",
+      "marketPrice": 1590
+    },
+    {
+      "from": "SDG",
+      "to": "EGP",
+      "marketPrice": 128
+    },
+    {
+      "from": "RUB",
+      "to": "USDT",
+      "marketPrice": 82
+    },
+    {
+      "from": "SDG",
+      "to": "USDT",
+      "marketPrice": 6250
+    },
+    {
+      "from": "SDG",
+      "to": "AED",
+      "marketPrice": 1336
+    },
+    {
+      "from": "SDG",
+      "to": "SAR",
+      "marketPrice": 1667
+    }
   ]
 }

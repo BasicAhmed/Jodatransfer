@@ -19,13 +19,12 @@ type Mode = "send" | "receive";
 // send each currency (a few hundred SAR vs hundreds of thousands SDG).
 const QUICK_AMOUNTS: Record<CurrencyCode, number[]> = {
   SDG: [50000, 100000, 300000],
-  ZAR: [500, 1000, 5000],
-  EGP: [1000, 5000, 10000],
   MYR: [200, 500, 2000],
-  SAR: [200, 500, 2000],
-  QAR: [200, 500, 2000],
-  AED: [200, 500, 2000],
+  EGP: [1000, 5000, 10000],
+  RUB: [5000, 20000, 50000],
   USDT: [50, 100, 500],
+  AED: [200, 500, 2000],
+  SAR: [200, 500, 2000],
 };
 
 export default function Calculator({ rates }: { rates: RateRow[] }) {

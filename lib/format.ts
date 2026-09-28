@@ -4,13 +4,13 @@ export function formatRate(value: number): string {
 }
 
 /** Rounds a computed rate to 2 decimal places before it's shown or quoted
- *  anywhere (e.g. EGP→ZAR market price 3.165 → 3.17). */
+ *  anywhere (e.g. a market price of 3.165 → 3.17). */
 export function roundForDisplay(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
 /** Like formatRate, but for numbers that can be much smaller than 1 (e.g.
- *  "1 SDG = 0.0028 ZAR" — SDG is worth a tiny fraction of a stronger
+ *  "1 SDG = 0.0006 MYR" — SDG is worth a tiny fraction of a stronger
  *  currency). A fixed 2-decimal format would show these as a misleading
  *  "0.00". Shows more decimals only when the value actually needs them. */
 export function formatSmart(value: number): string {
