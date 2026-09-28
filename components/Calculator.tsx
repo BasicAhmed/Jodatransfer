@@ -32,7 +32,7 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
   const [fromCode, setFromCode] = useState<CurrencyCode>(FROM_CURRENCIES[0].code);
   const toOptions = useMemo(() => validToCurrencies(fromCode), [fromCode]);
   const [toCode, setToCode] = useState<CurrencyCode>(toOptions[0]?.code);
-  const [amount, setAmount] = useState("1000");
+  const [amount, setAmount] = useState("100000");
   const [swapCount, setSwapCount] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [shared, setShared] = useState(false);
@@ -212,41 +212,69 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
     setSharing(false);
   }
 
+  const rateText =
+    rate && toCurrency
+      ? usesMultiply
+        ? `1 ${fromCurrency.code} = ${formatRate(rate.rate)} ${toCurrency.code}`
+        : `1 ${toCurrency.code} = ${formatRate(rate.rate)} ${fromCurrency.code}`
+      : "";
+  const trendTone =
+    trend === "up"
+      ? { box: "border-red-500/30 bg-red-500/10", dot: "bg-red-500", text: "text-red-500" }
+      : trend === "down"
+      ? { box: "border-emerald-500/30 bg-emerald-500/10", dot: "bg-emerald-500", text: "text-emerald-500" }
+      : { box: "border-primary/25 bg-primary/10", dot: "bg-primary", text: "text-primary" };
+
   return (
-    <section id="calculator" className="border-t border-border py-16 sm:py-24">
+    <section id="calculator" className="relative border-t border-border/60 py-16 sm:py-24">
       <div className="container-page">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center">
           <div>
             <p className="eyebrow">الحاسبة</p>
             <h2 className="section-heading mt-3">احسبها صاح</h2>
             <p className="mt-3 max-w-md text-muted">
               شوف انت عاوز كم و حتحول كم باسهل طريقه و اطلب الان.
             </p>
+            <ul className="mt-6 hidden space-y-3 lg:block">
+              {["السعر اللي تشوفه هو اللي يُطبّق", "بدون رسوم مخفية", "الطلب يفتح على واتساب وتفاصيلك جاهزة"].map(
+                (t) => (
+                  <li key={t} className="flex items-center gap-3 text-sm text-ink">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary shadow-soft">
+                      <Check size={13} />
+                    </span>
+                    {t}
+                  </li>
+                )
+              )}
+            </ul>
           </div>
 
           <div className="relative">
             <div
               aria-hidden="true"
-              className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-primary/10 blur-3xl"
+              className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-brand-gradient opacity-20 blur-3xl"
             />
-            <div className="rounded-3xl border border-border bg-surface p-5 sm:p-7">
-              <div className="mb-4 grid grid-cols-2 gap-1 rounded-full border border-border bg-surface2 p-1">
+            <div className="card relative overflow-hidden p-4 shadow-lift sm:p-6">
+              <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-brand-gradient opacity-70" />
+
+              {/* Mode toggle */}
+              <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-border/70 bg-surface2 p-1 shadow-well">
                 {(
                   [
-                    ["send", "عندي مبلغ محدد أرسله"],
-                    ["receive", "عاوز يوصل مبلغ محدد"],
+                    ["send", "عندي مبلغ أرسله"],
+                    ["receive", "عاوز يوصل مبلغ"],
                   ] as const
                 ).map(([value, text]) => (
                   <button
                     key={value}
                     onClick={() => setMode(value)}
-                    className="relative rounded-full py-2 text-sm font-semibold transition-colors"
+                    className="relative rounded-xl py-2.5 text-sm font-semibold transition-colors"
                   >
                     {mode === value && (
                       <motion.span
                         layoutId="mode-pill"
                         transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                        className="absolute inset-0 rounded-full bg-primary"
+                        className="absolute inset-0 rounded-xl bg-primary shadow-glow"
                       />
                     )}
                     <span className={`relative ${mode === value ? "text-bg" : "text-muted"}`}>{text}</span>
@@ -254,28 +282,41 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                 ))}
               </div>
 
-              <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-subtle">
-                    من عملة
-                  </span>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-lg">
-                      {fromCurrency.flag}
+              {/* Currency pickers */}
+              <div className="relative grid grid-cols-2 gap-2.5">
+                {(
+                  [
+                    ["من", fromCurrency, fromCode, FROM_CURRENCIES, (v: CurrencyCode) => handleFromChange(v)],
+                    ["إلى", toCurrency, toCurrency?.code, currentToOptions, (v: CurrencyCode) => setToCode(v)],
+                  ] as const
+                ).map(([label, cur, value, options, onChange]) => (
+                  <label
+                    key={label}
+                    className="relative block rounded-2xl border border-border/70 bg-surface2 p-3 shadow-well transition-colors focus-within:border-primary"
+                  >
+                    <span className="block text-[11px] font-medium text-subtle">{label}</span>
+                    <span className="mt-1 flex items-center gap-2">
+                      <span className="text-2xl leading-none">{cur?.flag}</span>
+                      <span className="min-w-0">
+                        <span className="block font-mono text-base font-bold text-ink">{cur?.code}</span>
+                        <span className="block truncate text-[11px] text-muted">{cur?.name}</span>
+                      </span>
+                      <ChevronDown size={14} className="mr-auto shrink-0 text-subtle" />
                     </span>
                     <select
-                      value={fromCode}
-                      onChange={(e) => handleFromChange(e.target.value as CurrencyCode)}
-                      className="w-full appearance-none rounded-xl border border-border bg-surface2 py-2.5 pl-3.5 pr-10 text-sm font-medium text-ink focus:border-primary"
+                      value={value}
+                      onChange={(e) => onChange(e.target.value as CurrencyCode)}
+                      aria-label={`${label} عملة`}
+                      className="absolute inset-0 cursor-pointer opacity-0"
                     >
-                      {FROM_CURRENCIES.map((c) => (
+                      {options.map((c) => (
                         <option key={c.code} value={c.code}>
                           {c.name} ({c.code})
                         </option>
                       ))}
                     </select>
-                  </div>
-                </label>
+                  </label>
+                ))}
 
                 <motion.button
                   onClick={swapCurrencies}
@@ -284,60 +325,45 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   aria-label="بدّل العملتين"
                   title="بدّل العملتين"
-                  className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface2 text-muted transition-colors hover:border-primary hover:text-primary"
+                  className="absolute left-1/2 top-1/2 z-10 flex size-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-surface bg-primary text-bg shadow-glow"
                 >
                   <ArrowLeftRight size={15} />
                 </motion.button>
-
-                <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-subtle">
-                    إلى عملة
-                  </span>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-lg">
-                      {toCurrency?.flag}
-                    </span>
-                    <select
-                      value={toCurrency?.code}
-                      onChange={(e) => setToCode(e.target.value as CurrencyCode)}
-                      className="w-full appearance-none rounded-xl border border-border bg-surface2 py-2.5 pl-3.5 pr-10 text-sm font-medium text-ink focus:border-primary"
-                    >
-                      {currentToOptions.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.name} ({c.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </label>
               </div>
 
-              <label className="mt-3 block">
-                <span className="mb-1 block text-xs font-medium text-subtle">
+              {/* Amount */}
+              <label className="mt-4 block">
+                <span className="mb-1.5 block text-xs font-medium text-subtle">
                   {mode === "send"
                     ? `المبلغ اللي حترسله (${fromCurrency.code})`
                     : `المبلغ اللي عاوزه يوصل (${toCurrency?.code})`}
                 </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  dir="ltr"
-                  className="w-full rounded-xl border border-border bg-surface2 px-3.5 py-2.5 text-left font-mono text-lg text-ink focus:border-primary"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    dir="ltr"
+                    className="field py-3.5 pl-4 pr-20 text-left font-mono text-2xl font-bold"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center font-mono text-sm font-semibold text-subtle">
+                    {activeCurrency?.code}
+                  </span>
+                </div>
               </label>
 
               {quickAmounts.length > 0 && (
-                <div className="mt-2 flex gap-2" dir="ltr">
+                <div className="mt-2.5 grid grid-cols-3 gap-2" dir="ltr">
                   {quickAmounts.map((q) => (
                     <button
                       key={q}
                       onClick={() => setAmount(String(q))}
-                      className={`rounded-full border px-3 py-1 font-mono text-xs transition-colors ${
+                      className={`rounded-xl border py-1.5 font-mono text-xs font-semibold transition-all ${
                         amountNum === q
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted hover:border-primary hover:text-primary"
+                          ? "border-primary bg-primary/10 text-primary shadow-soft"
+                          : "border-border/70 bg-surface text-muted shadow-soft hover:border-primary/60 hover:text-primary"
                       }`}
                     >
                       {q.toLocaleString("en-US")}
@@ -346,80 +372,17 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                 </div>
               )}
 
-              {involvesSudan && (
-                <div
-                  className="mt-3 flex items-start gap-2.5 rounded-xl border border-primary/40 bg-primary/10 p-3 text-xs text-ink"
-                  role="alert"
-                >
-                  <span aria-hidden="true">⚠️</span>
-                  <p>
-                    سعر الجنيه السوداني بيتقلب بشكل كبير الفترة دي — تأكد من السعر مع الإدارة قبل ما تأكد الطلب.
-                  </p>
-                </div>
-              )}
-
-              {rate && toCurrency && (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`${fromCode}-${toCurrency.code}-${trend ?? "flat"}`}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.25 }}
-                    className={`mt-3 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 ${
-                      trend === "up"
-                        ? "border-red-500/40 bg-red-500/10"
-                        : trend === "down"
-                        ? "border-emerald-500/40 bg-emerald-500/10"
-                        : "border-primary/40 bg-primary/10"
-                    }`}
-                  >
-                    <span className="relative flex size-2">
-                      <span
-                        className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-                          trend === "up" ? "bg-red-500" : trend === "down" ? "bg-emerald-500" : "bg-primary"
-                        }`}
-                      />
-                      <span
-                        className={`relative inline-flex size-2 rounded-full ${
-                          trend === "up" ? "bg-red-500" : trend === "down" ? "bg-emerald-500" : "bg-primary"
-                        }`}
-                      />
-                    </span>
-                    <span
-                      className={`font-mono text-sm font-bold ${
-                        trend === "up" ? "text-red-500" : trend === "down" ? "text-emerald-500" : "text-primary"
-                      }`}
-                      dir="ltr"
-                    >
-                      {usesMultiply
-                        ? `1 ${fromCurrency.code} = ${formatRate(rate.rate)} ${toCurrency.code}`
-                        : `1 ${toCurrency.code} = ${formatRate(rate.rate)} ${fromCurrency.code}`}
-                    </span>
-                    {trend && (
-                      <span className={`text-xs ${trend === "up" ? "text-red-500" : "text-emerald-500"}`}>
-                        {trend === "up" ? "▲ زيادة" : "▼ انخفاض"}
-                      </span>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              )}
-
-              {rate?.updatedAt && (
-                <p className="mt-1 text-center text-[11px] text-subtle">
-                  آخر تحديث للسعر: {formatRelativeTime(rate.updatedAt)}
-                </p>
-              )}
-
-              <div className="mt-2.5 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
+              {/* Result */}
+              <div className="relative mt-4 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 text-center shadow-well">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-xs font-medium text-subtle">المستلم يستلم</p>
+                  <p className="text-xs font-medium text-muted">المستلم يستلم</p>
                   {rate && (
                     <button
                       onClick={shareResult}
                       disabled={sharing}
                       aria-label="مشاركة النتيجة كصورة"
                       title="مشاركة النتيجة كصورة"
-                      className="text-subtle transition-colors hover:text-primary disabled:opacity-50"
+                      className="rounded-full p-1 text-subtle transition-colors hover:bg-primary/10 hover:text-primary disabled:opacity-50"
                     >
                       {sharing ? (
                         <motion.span
@@ -443,29 +406,77 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="mt-1 font-mono text-3xl font-bold text-primary sm:text-4xl"
+                    className="mt-1 break-all font-mono text-3xl font-extrabold text-ink sm:text-4xl"
                     dir="ltr"
                   >
-                    {rate
-                      ? `${finalAmountReceived.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${toCurrency.code}`
-                      : "اختر ممر التحويل"}
+                    {rate ? (
+                      <>
+                        {finalAmountReceived.toLocaleString("en-US", { maximumFractionDigits: 2 })}{" "}
+                        <span className="text-gradient">{toCurrency.code}</span>
+                      </>
+                    ) : (
+                      "اختر ممر التحويل"
+                    )}
                   </motion.p>
                 </AnimatePresence>
-                <p className="mt-1.5 font-mono text-sm text-muted" dir="ltr">
-                  مقابل {amountSent.toLocaleString("en-US", { maximumFractionDigits: 2 })} {fromCurrency.code}
+                <p className="mt-1 text-sm text-muted">
+                  مقابل{" "}
+                  <span className="font-mono" dir="ltr">
+                    {amountSent.toLocaleString("en-US", { maximumFractionDigits: 2 })} {fromCurrency.code}
+                  </span>
                 </p>
                 {discountApplies && (
-                  <p className="mt-1.5 text-xs font-semibold text-emerald-500">
+                  <p className="mt-2 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-500">
                     🎉 خصم {DISCOUNT_AMOUNT_USDT} USDT مضاف — تحويل أكتر من {DISCOUNT_THRESHOLD_USDT} USDT
                   </p>
                 )}
+
+                {rate && toCurrency && (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`${fromCode}-${toCurrency.code}-${trend ?? "flat"}`}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.25 }}
+                      className={`mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 ${trendTone.box}`}
+                    >
+                      <span className="relative flex size-2">
+                        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${trendTone.dot}`} />
+                        <span className={`relative inline-flex size-2 rounded-full ${trendTone.dot}`} />
+                      </span>
+                      <span className={`font-mono text-xs font-bold ${trendTone.text}`} dir="ltr">
+                        {rateText}
+                      </span>
+                      {trend && (
+                        <span className={`text-[11px] ${trendTone.text}`}>
+                          {trend === "up" ? "▲ زيادة" : "▼ انخفاض"}
+                        </span>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+                {rate?.updatedAt && (
+                  <p className="mt-1.5 text-[11px] text-subtle">آخر تحديث للسعر: {formatRelativeTime(rate.updatedAt)}</p>
+                )}
               </div>
 
+              {involvesSudan && (
+                <div
+                  className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-ink"
+                  role="alert"
+                >
+                  <span aria-hidden="true">⚠️</span>
+                  <p>
+                    سعر الجنيه السوداني بيتقلب بشكل كبير الفترة دي — تأكد من السعر مع الإدارة قبل ما تأكد الطلب.
+                  </p>
+                </div>
+              )}
+
               {toCurrency && (
-                <div className="mt-2.5">
+                <div className="mt-2">
                   <button
                     onClick={() => setShowHistory((v) => !v)}
-                    className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-primary"
+                    className="flex w-full items-center justify-center gap-1.5 py-2 text-xs font-medium text-subtle transition-colors hover:text-primary"
                   >
                     {showHistory ? "إخفاء سعر آخر 30 يوم" : "عرض سعر آخر 30 يوم"}
                     <motion.span animate={{ rotate: showHistory ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -492,7 +503,7 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                 onClick={orderNow}
                 disabled={!rate || amountNum <= 0}
                 whileTap={{ scale: 0.98 }}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-bg transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-primary mt-2 w-full py-4 text-sm"
               >
                 <MessageCircle size={16} /> اطلب الآن عبر واتساب <ArrowLeft size={16} />
               </motion.button>

@@ -32,7 +32,18 @@ const config: Config = {
         body: ["IBM Plex Sans Arabic", "system-ui", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
+      boxShadow: {
+        // Layered, navy-tinted elevation. --shadow-rgb swaps per theme.
+        card: "0 1px 0 0 rgb(var(--highlight-rgb) / 0.05) inset, 0 1px 2px rgb(var(--shadow-rgb) / 0.10), 0 12px 32px -12px rgb(var(--shadow-rgb) / 0.35)",
+        lift: "0 1px 0 0 rgb(var(--highlight-rgb) / 0.06) inset, 0 2px 4px rgb(var(--shadow-rgb) / 0.12), 0 24px 48px -16px rgb(var(--shadow-rgb) / 0.45)",
+        soft: "0 1px 2px rgb(var(--shadow-rgb) / 0.08), 0 4px 12px -4px rgb(var(--shadow-rgb) / 0.20)",
+        well: "inset 0 1px 3px rgb(var(--shadow-rgb) / 0.22)",
+        glow: "0 1px 0 0 rgb(255 255 255 / 0.25) inset, 0 10px 28px -8px rgb(var(--color-primary) / 0.65)",
+        "glow-lg": "0 0 0 1px rgb(var(--color-primary) / 0.25), 0 20px 60px -16px rgb(var(--color-primary) / 0.55)",
+      },
       backgroundImage: {
+        "brand-gradient": "linear-gradient(135deg, #0053F1 0%, #1A8CFF 50%, #22D3EE 100%)",
+        "dot-grid": "radial-gradient(rgb(var(--color-ink) / 0.07) 1px, transparent 1px)",
         "grid-fade":
           "radial-gradient(circle at 20% 0%, rgba(0,132,253,0.18), transparent 45%), radial-gradient(circle at 100% 30%, rgba(34,211,238,0.10), transparent 40%)",
       },

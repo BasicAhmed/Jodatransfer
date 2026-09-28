@@ -14,6 +14,8 @@
   --color-subtle: 98 115 154;
   --color-primary: 26 140 255;
   --color-accent: 34 211 238;
+  --shadow-rgb: 0 4 18;
+  --highlight-rgb: 255 255 255;
 }
 
 .light {
@@ -27,6 +29,8 @@
   --color-subtle: 130 144 174;
   --color-primary: 0 98 214;
   --color-accent: 8 145 178;
+  --shadow-rgb: 16 42 94;
+  --highlight-rgb: 255 255 255;
 }
 
 * {
@@ -70,4 +74,24 @@
 /* Logo sits on a navy tile so the white Tether mark stays visible in light mode */
 .logo-tile {
   @apply rounded-lg bg-brand-navy p-1;
+}
+
+/* ---------- Shared surfaces & controls ---------- */
+.card {
+  @apply rounded-3xl border border-border/70 bg-surface shadow-card;
+}
+.card-sm {
+  @apply rounded-2xl border border-border/70 bg-surface shadow-soft;
+}
+.field {
+  @apply w-full rounded-xl border border-border bg-surface2 text-ink shadow-well outline-none transition-colors placeholder:text-subtle focus:border-primary focus:ring-4 focus:ring-primary/15;
+}
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary font-semibold text-bg shadow-glow transition-all hover:-translate-y-px hover:brightness-110 active:translate-y-0 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface font-semibold text-ink shadow-soft transition-all hover:-translate-y-px hover:border-primary/60;
+}
+.text-gradient {
+  @apply bg-brand-gradient bg-clip-text text-transparent;
 }

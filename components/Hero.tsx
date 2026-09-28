@@ -1,82 +1,104 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle, ShieldCheck, Zap, Headphones } from "lucide-react";
 import { whatsappLink } from "@/lib/whatsapp";
+import { CURRENCIES } from "@/lib/corridors";
+
+const rise = (delay: number) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] as const },
+});
+
+const STATS = [
+  { icon: Zap, value: "أقل من 30 دقيقة", label: "متوسط التحويل" },
+  { icon: ShieldCheck, value: "سعر مثبّت", label: "عند تأكيد الطلب" },
+  { icon: Headphones, value: "واتساب", label: "دعم فوري" },
+];
 
 export default function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden bg-grid-fade">
-      <div className="container-page flex flex-col items-center py-20 text-center sm:py-28">
+    <section id="top" className="relative overflow-hidden">
+      {/* Backdrop: brand glow + faint dot grid that fades out */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-grid-fade" />
+        <div className="absolute inset-0 bg-dot-grid [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+        <div className="absolute -top-32 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+      </div>
+
+      <div className="container-page flex flex-col items-center pb-16 pt-14 text-center sm:pb-24 sm:pt-20">
+        <motion.div {...rise(0)} className="relative">
+          <div aria-hidden="true" className="absolute inset-0 -z-10 scale-150 rounded-full bg-primary/30 blur-2xl" />
+          <div className="rounded-[1.6rem] border border-white/10 bg-brand-navy p-3 shadow-glow-lg">
+            <Image src="/logo-icon.png" alt="" width={68} height={80} className="h-16 w-auto" priority />
+          </div>
+        </motion.div>
+
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="eyebrow"
+          {...rise(0.05)}
+          className="mt-7 inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/70 px-3.5 py-1.5 text-xs font-semibold text-muted shadow-soft backdrop-blur"
         >
-          موثوق من الطلاب في 6 دول
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+          </span>
+          أسعار محدّثة يومياً
         </motion.p>
 
         <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.05 }}
-          className="mt-5 max-w-3xl font-display text-4xl font-bold leading-[1.2] tracking-tight text-ink sm:text-6xl"
+          {...rise(0.1)}
+          className="mt-5 max-w-3xl font-display text-[clamp(1.6rem,8vw,3.75rem)] font-extrabold leading-[1.3] tracking-tight text-ink"
         >
-          حول قروشك أسرع،
+          <span className="whitespace-nowrap">تحويلاتك أسهل وأسرع</span>
           <br />
-          بسعر <span className="text-primary">يستاهل فعلاً.</span>
+          <span className="text-gradient">مع جودة.</span>
         </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="mt-6 max-w-xl text-base text-muted sm:text-lg"
-        >
-          Jodatransfer يحول قروشك من السوداني إلى ماليزيا ومصر والإمارات
-          والسعودية و USDT والعكس، وكمان الروبل مقابل USDT — مصمم للطلاب
-          اللي محتاجين سرعة وسعر ظابط، من دون جرجرة.
+        <motion.p {...rise(0.15)} className="mt-5 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
+          من الجنيه السوداني إلى ماليزيا ومصر والإمارات والسعودية و USDT والعكس، وكمان الروبل مقابل USDT —
+          بسعر واضح وبدون جرجرة.
         </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          className="mt-9 flex flex-col gap-3 sm:flex-row"
-        >
-          <a
-            href="#calculator"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-bg transition-transform hover:scale-[1.03]"
-          >
-            احسب التحويل <ArrowLeft size={16} />
+        <motion.div {...rise(0.2)} className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <a href="#calculator" className="btn-primary px-8 py-3.5 text-sm">
+            احسب تحويلك <ArrowLeft size={16} />
           </a>
           <a
             href={whatsappLink("مرحباً Jodatransfer، عندي استفسار عن تحويل أموال.")}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-primary"
+            className="btn-ghost px-8 py-3.5 text-sm"
           >
             <MessageCircle size={16} className="text-primary" /> تواصل عبر واتساب
           </a>
         </motion.div>
 
+        {/* Supported currencies */}
+        <motion.div {...rise(0.25)} className="mt-8 flex flex-wrap justify-center gap-2" dir="ltr">
+          {Object.values(CURRENCIES).map((c) => (
+            <span
+              key={c.code}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface px-3 py-1 font-mono text-xs font-semibold text-ink shadow-soft"
+            >
+              <span className="text-sm">{c.flag}</span>
+              {c.code}
+            </span>
+          ))}
+        </motion.div>
+
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-14 grid w-full max-w-2xl grid-cols-3 gap-6 border-t border-border pt-8 text-center"
+          {...rise(0.3)}
+          className="card mt-10 grid w-full max-w-2xl grid-cols-3 divide-x divide-x-reverse divide-border/70 p-2"
         >
-          {[
-            ["6", "ممرات تحويل"],
-            ["أقل من 30 دقيقة", "متوسط التحويل"],
-            ["واتساب", "دعم فوري"],
-          ].map(([stat, label]) => (
-            <div key={label}>
-              <div className="font-display text-xl font-bold text-ink sm:text-2xl" dir="ltr">
-                {stat}
-              </div>
-              <div className="mt-1 text-xs text-subtle">{label}</div>
+          {STATS.map(({ icon: Icon, value, label }) => (
+            <div key={label} className="flex flex-col items-center px-2 py-3">
+              <span className="mb-2 rounded-xl bg-primary/10 p-2 text-primary">
+                <Icon size={16} />
+              </span>
+              <span className="font-display text-sm font-bold text-ink sm:text-base">{value}</span>
+              <span className="mt-0.5 text-[11px] text-subtle sm:text-xs">{label}</span>
             </div>
           ))}
         </motion.div>
