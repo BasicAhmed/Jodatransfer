@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://jodatransfer.com"),
   icons: {
     icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Jodatransfer",
@@ -17,6 +18,8 @@ export const metadata: Metadata = {
     images: ["/logo-full.png"],
   },
 };
+
+export const viewport = { themeColor: "#030B1F" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

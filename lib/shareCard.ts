@@ -20,14 +20,15 @@ export interface ShareCardParams {
 const WIDTH = 1000;
 
 const COLORS = {
-  bg: "#0A0A0B",
-  surface: "#141416",
-  surface2: "#1C1C1F",
-  ink: "#F5F4F1",
-  muted: "#9A9A9E",
-  subtle: "#6E6E73",
-  border: "rgba(255,255,255,0.09)",
-  primary: "#FE5200",
+  bg: "#030B1F",
+  surface: "#081530",
+  surface2: "#0D1D3E",
+  ink: "#EEF4FF",
+  muted: "#93A3C2",
+  subtle: "#62739A",
+  border: "rgba(120,170,255,0.14)",
+  primary: "#1A8CFF",
+  accent: "#22D3EE",
   emerald: "#10B981",
   red: "#EF4444",
 };
@@ -207,7 +208,7 @@ async function createQrCanvas(text: string, size: number): Promise<HTMLCanvasEle
     if (!ctx) return null;
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0A0A0B";
+    ctx.fillStyle = "#030B1F";
     for (let row = 0; row < count; row++) {
       for (let col = 0; col < count; col++) {
         if (qr.isDark(row, col)) {
@@ -263,10 +264,10 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   ctx.fillStyle = COLORS.bg;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  // Soft orange glow, top of card
+  // Soft blue glow, top of card
   const glow = ctx.createRadialGradient(WIDTH / 2, 220, 40, WIDTH / 2, 220, 560);
-  glow.addColorStop(0, "rgba(254,82,0,0.24)");
-  glow.addColorStop(1, "rgba(254,82,0,0)");
+  glow.addColorStop(0, "rgba(0,132,253,0.26)");
+  glow.addColorStop(1, "rgba(0,132,253,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -286,8 +287,8 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   const logoW = logo ? (logo.width / logo.height) * logoH : 0;
   ctx.direction = "ltr";
   ctx.font = "700 44px 'IBM Plex Sans Arabic', sans-serif";
-  const flyWidth = ctx.measureText("Fly").width;
-  const rateWidth = ctx.measureText("Rate").width;
+  const flyWidth = ctx.measureText("Joda").width;
+  const rateWidth = ctx.measureText("transfer").width;
   const lockupWidth = logoW + (logo ? 14 : 0) + flyWidth + rateWidth;
   let cursorX = WIDTH / 2 - lockupWidth / 2;
   const wordmarkY = 128;
@@ -298,9 +299,9 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   }
   ctx.textAlign = "left";
   ctx.fillStyle = COLORS.ink;
-  ctx.fillText("Fly", cursorX, wordmarkY);
+  ctx.fillText("Joda", cursorX, wordmarkY);
   ctx.fillStyle = COLORS.primary;
-  ctx.fillText("Rate", cursorX + flyWidth, wordmarkY);
+  ctx.fillText("transfer", cursorX + flyWidth, wordmarkY);
   ctx.textAlign = "center";
 
   // Thin accent divider under the logo
@@ -323,8 +324,8 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   ctx.fillText("⇄", WIDTH / 2, chipY + 44);
 
   // Result panel
-  ctx.fillStyle = "rgba(254,82,0,0.06)";
-  ctx.strokeStyle = "rgba(254,82,0,0.22)";
+  ctx.fillStyle = "rgba(26,140,255,0.07)";
+  ctx.strokeStyle = "rgba(34,211,238,0.25)";
   ctx.lineWidth = 2;
   roundRect(ctx, panelX, panelY, panelW, panelH, 32);
   ctx.fill();

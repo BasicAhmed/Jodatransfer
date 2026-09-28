@@ -33,9 +33,9 @@ export default function Nav() {
     >
       <nav className="container-page flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="Jodatransfer" width={36} height={30} className="h-8 w-auto" priority />
+          <Image src="/logo-icon.png" alt="Jodatransfer" width={31} height={36} className="logo-tile h-9 w-auto" priority />
           <span className="font-display text-lg font-bold tracking-tight text-ink" dir="ltr">
-            Fly<span className="text-primary">Rate</span>
+            Joda<span className="text-primary">transfer</span>
           </span>
         </a>
 

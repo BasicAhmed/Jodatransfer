@@ -4,25 +4,29 @@
 
 :root {
   color-scheme: dark;
-  /* Dark theme (default — matches FlyRate's brand identity) */
-  --color-bg: 10 10 11;
-  --color-surface: 20 20 22;
-  --color-surface2: 28 28 31;
-  --color-border: 40 40 44;
-  --color-ink: 245 244 241;
-  --color-muted: 154 154 158;
-  --color-subtle: 110 110 115;
+  /* Dark theme (default — Jodatransfer navy / electric blue / cyan) */
+  --color-bg: 3 11 31;
+  --color-surface: 8 21 48;
+  --color-surface2: 13 29 62;
+  --color-border: 27 45 86;
+  --color-ink: 238 244 255;
+  --color-muted: 147 163 194;
+  --color-subtle: 98 115 154;
+  --color-primary: 26 140 255;
+  --color-accent: 34 211 238;
 }
 
 .light {
   color-scheme: light;
-  --color-bg: 250 250 249;
+  --color-bg: 245 248 253;
   --color-surface: 255 255 255;
-  --color-surface2: 243 242 239;
-  --color-border: 228 226 221;
-  --color-ink: 18 18 20;
-  --color-muted: 90 90 95;
-  --color-subtle: 140 140 145;
+  --color-surface2: 234 240 250;
+  --color-border: 216 225 240;
+  --color-ink: 10 23 51;
+  --color-muted: 74 88 120;
+  --color-subtle: 130 144 174;
+  --color-primary: 0 98 214;
+  --color-accent: 8 145 178;
 }
 
 * {
@@ -30,12 +34,12 @@
 }
 
 ::selection {
-  background: #fe5200;
-  color: #0a0a0b;
+  background: rgb(var(--color-primary));
+  color: rgb(var(--color-bg));
 }
 
 :focus-visible {
-  outline: 2px solid #fe5200;
+  outline: 2px solid rgb(var(--color-primary));
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -61,4 +65,9 @@
 
 .section-heading {
   @apply font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl;
+}
+
+/* Logo sits on a navy tile so the white Tether mark stays visible in light mode */
+.logo-tile {
+  @apply rounded-lg bg-brand-navy p-1;
 }

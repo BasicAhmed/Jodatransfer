@@ -14,10 +14,17 @@ const config: Config = {
         surface2: "rgb(var(--color-surface2) / <alpha-value>)",
         border: "rgb(var(--color-border) / <alpha-value>)",
         primary: {
-          DEFAULT: "#FE5200",
-          hot: "#FF7A3D",
-          dim: "#C43F00",
-          50: "#FFF1EA",
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          hot: "#22D3EE",
+          dim: "#0053F1",
+          50: "#EAF4FF",
+        },
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        brand: {
+          navy: "#030B1F",
+          blue: "#0084FD",
+          royal: "#0053F1",
+          cyan: "#22D3EE",
         },
       },
       fontFamily: {
@@ -27,7 +34,7 @@ const config: Config = {
       },
       backgroundImage: {
         "grid-fade":
-          "radial-gradient(circle at 20% 0%, rgba(254,82,0,0.14), transparent 45%), radial-gradient(circle at 100% 30%, rgba(254,82,0,0.08), transparent 40%)",
+          "radial-gradient(circle at 20% 0%, rgba(0,132,253,0.18), transparent 45%), radial-gradient(circle at 100% 30%, rgba(34,211,238,0.10), transparent 40%)",
       },
       keyframes: {
         ticker: {

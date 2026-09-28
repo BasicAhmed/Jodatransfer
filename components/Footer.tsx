@@ -5,9 +5,9 @@ export default function Footer() {
     <footer className="border-t border-border py-10">
       <div className="container-page flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="flex items-center gap-2" dir="ltr">
-          <Image src="/logo-icon.png" alt="Jodatransfer" width={28} height={23} className="h-6 w-auto" />
+          <Image src="/logo-icon.png" alt="Jodatransfer" width={24} height={28} className="logo-tile h-7 w-auto" />
           <span className="font-display text-base font-bold text-ink">
-            Fly<span className="text-primary">Rate</span> Exchange
+            Joda<span className="text-primary">transfer</span>
           </span>
         </div>
         <p className="text-xs text-subtle">
