@@ -17,38 +17,47 @@ export interface ShareCardParams {
   history?: ShareCardHistoryPoint[]; // last ~30 days, oldest first — same data as the in-app chart
 }
 
-const WIDTH = 1000;
+// 4:5 portrait — sits well in WhatsApp chats, Status and Instagram feed.
+const W = 1080;
+const H = 1350;
+const M = 60; // outer margin
 
-const COLORS = {
-  bg: "#030B1F",
-  surface: "#081530",
-  surface2: "#0D1D3E",
-  ink: "#EEF4FF",
-  muted: "#93A3C2",
+const C = {
+  bgTop: "#07173A",
+  bgBottom: "#020817",
+  card: "rgba(10, 28, 64, 0.78)",
+  well: "rgba(2, 8, 23, 0.55)",
+  ink: "#F2F7FF",
+  muted: "#9FB0CF",
   subtle: "#62739A",
-  border: "rgba(120,170,255,0.14)",
+  line: "rgba(140, 180, 255, 0.14)",
+  royal: "#0053F1",
   primary: "#1A8CFF",
-  accent: "#22D3EE",
+  cyan: "#22D3EE",
+  navy: "#020817",
   emerald: "#10B981",
   red: "#EF4444",
 };
 
+const AR = "'IBM Plex Sans Arabic', 'Noto Sans Arabic', sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+
 async function loadFonts() {
   const specs = [
-    "700 44px 'IBM Plex Sans Arabic'",
-    "600 42px 'IBM Plex Sans Arabic'",
-    "600 34px 'IBM Plex Sans Arabic'",
-    "500 30px 'IBM Plex Sans Arabic'",
-    "500 26px 'IBM Plex Sans Arabic'",
-    "700 90px 'IBM Plex Mono'",
-    "600 40px 'IBM Plex Mono'",
-    "600 34px 'IBM Plex Mono'",
+    `500 26px ${AR}`,
+    `600 30px ${AR}`,
+    `700 36px ${AR}`,
+    `800 40px ${AR}`,
+    `500 26px ${MONO}`,
+    `600 40px ${MONO}`,
+    `700 96px ${MONO}`,
   ];
   try {
-    await Promise.all(specs.map((s) => document.fonts.load(s)));
+    await Promise.all(specs.map((s) => document.fonts.load(s, "0123456789 SDG تحويل")));
     await document.fonts.ready;
   } catch {
-    // fonts API not fully supported — canvas will fall back to system fonts
+    // fonts API not fully supported — canvas falls back to system fonts
   }
 }
 
@@ -61,7 +70,7 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -71,96 +80,240 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-/** Shrinks the font size (keeping weight/family) until `text` fits within
- *  maxWidth — protects large SDG amounts (hundreds of thousands) from
- *  overflowing the card. */
-function fitFontSize(
+function brandGradient(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number) {
+  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  g.addColorStop(0, C.royal);
+  g.addColorStop(0.5, C.primary);
+  g.addColorStop(1, C.cyan);
+  return g;
+}
+
+function noShadow(ctx: CanvasRenderingContext2D) {
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+/** Text helper — sets font/colour/alignment/direction in one call. */
+function text(
   ctx: CanvasRenderingContext2D,
-  text: string,
-  family: string,
-  weight: number,
-  startSize: number,
-  minSize: number,
-  maxWidth: number
-): number {
-  let size = startSize;
-  while (size > minSize) {
-    ctx.font = `${weight} ${size}px '${family}', monospace`;
-    if (ctx.measureText(text).width <= maxWidth) break;
-    size -= 4;
-  }
+  s: string,
+  x: number,
+  y: number,
+  opts: { font: string; color: string | CanvasGradient; align?: CanvasTextAlign; dir?: CanvasDirection }
+) {
+  ctx.font = opts.font;
+  ctx.fillStyle = opts.color;
+  ctx.textAlign = opts.align ?? "left";
+  ctx.direction = opts.dir ?? "ltr";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(s, x, y);
+}
+
+function width(ctx: CanvasRenderingContext2D, s: string, font: string) {
+  ctx.font = font;
+  return ctx.measureText(s).width;
+}
+
+/** Largest font size (down to min) at which `s` fits in maxWidth. */
+function fit(ctx: CanvasRenderingContext2D, s: string, fontFor: (size: number) => string, start: number, min: number, maxWidth: number) {
+  let size = start;
+  while (size > min && width(ctx, s, fontFor(size)) > maxWidth) size -= 2;
   return size;
 }
 
-function trendColorHex(trend: ShareCardParams["trendColor"]) {
-  if (trend === "good") return COLORS.emerald;
-  if (trend === "bad") return COLORS.red;
-  return COLORS.primary;
+function trendHex(t: ShareCardParams["trendColor"]) {
+  return t === "good" ? C.emerald : t === "bad" ? C.red : C.cyan;
 }
 
-/** Small pill: flag in a circular badge + currency code, e.g. used for both
- *  sides of the corridor header. Returns the pill's total width so callers
- *  can lay out a pair of these side by side. */
-function drawCurrencyChip(
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  y: number,
-  flag: string,
-  code: string
-): number {
-  ctx.font = "600 34px 'IBM Plex Mono', monospace";
-  const codeWidth = ctx.measureText(code).width;
-  const chipHeight = 68;
-  const circleR = 26;
-  const gap = 14;
-  const paddingX = 24;
-  const chipWidth = circleR * 2 + gap + codeWidth + paddingX * 2;
-  const x = centerX - chipWidth / 2;
-
-  ctx.fillStyle = COLORS.surface2;
-  ctx.strokeStyle = COLORS.border;
-  ctx.lineWidth = 1.5;
-  roundRect(ctx, x, y, chipWidth, chipHeight, chipHeight / 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.fillStyle = COLORS.bg;
-  ctx.arc(x + paddingX + circleR, y + chipHeight / 2, circleR, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "30px sans-serif";
-  ctx.fillText(flag, x + paddingX + circleR, y + chipHeight / 2 + 2);
-
-  ctx.direction = "ltr";
-  ctx.textAlign = "left";
-  ctx.font = "600 34px 'IBM Plex Mono', monospace";
-  ctx.fillStyle = COLORS.ink;
-  ctx.fillText(code, x + paddingX + circleR * 2 + gap, y + chipHeight / 2 + 2);
-
-  ctx.textBaseline = "alphabetic";
-  ctx.textAlign = "center";
-  return chipWidth;
+function hexA(hex: string, a: number) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
 
-/** Subtle repeating dot texture so the background isn't perfectly flat. */
-function drawTexture(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  ctx.fillStyle = "rgba(255,255,255,0.035)";
-  const spacing = 34;
-  for (let y = spacing; y < height; y += spacing) {
-    for (let x = spacing; x < width; x += spacing) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1.4, 0, Math.PI * 2);
-      ctx.fill();
+function drawBackground(ctx: CanvasRenderingContext2D) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, C.bgTop);
+  bg.addColorStop(1, C.bgBottom);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Two soft light sources
+  const g1 = ctx.createRadialGradient(W * 0.85, 120, 20, W * 0.85, 120, 620);
+  g1.addColorStop(0, "rgba(26,140,255,0.35)");
+  g1.addColorStop(1, "rgba(26,140,255,0)");
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(W * 0.1, H * 0.78, 20, W * 0.1, H * 0.78, 560);
+  g2.addColorStop(0, "rgba(34,211,238,0.16)");
+  g2.addColorStop(1, "rgba(34,211,238,0)");
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, W, H);
+
+  // Orbit arcs echoing the logo's swooshes
+  ctx.save();
+  ctx.lineCap = "round";
+  const arcs = [
+    { r: 520, w: 2, a0: 3.3, a1: 4.9, alpha: 0.18 },
+    { r: 440, w: 1.5, a0: 3.6, a1: 5.4, alpha: 0.12 },
+    { r: 600, w: 1, a0: 3.1, a1: 4.4, alpha: 0.1 },
+  ];
+  for (const arc of arcs) {
+    const g = ctx.createLinearGradient(W - arc.r, 0, W, arc.r);
+    g.addColorStop(0, `rgba(34,211,238,${arc.alpha})`);
+    g.addColorStop(1, `rgba(26,140,255,0)`);
+    ctx.strokeStyle = g;
+    ctx.lineWidth = arc.w;
+    ctx.beginPath();
+    ctx.arc(W + 40, -60, arc.r, arc.a0, arc.a1);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Fine dot grid, fading toward the bottom
+  for (let y = 30; y < H; y += 30) {
+    const a = 0.05 * (1 - y / H);
+    if (a < 0.006) continue;
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    for (let x = 30; x < W; x += 30) {
+      ctx.fillRect(x, y, 2, 2);
     }
   }
 }
 
-/** Compact line chart of recent market-price history, same data source as
- *  the in-app RateHistoryChart. */
-function drawSparkline(
+/** Glass card with a gradient hairline border and a soft drop shadow. */
+function drawCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, strong = true) {
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 4, 18, 0.65)";
+  ctx.shadowBlur = 60;
+  ctx.shadowOffsetY = 24;
+  rr(ctx, x, y, w, h, r);
+  ctx.fillStyle = C.card;
+  ctx.fill();
+  ctx.restore();
+
+  // Inner top sheen
+  ctx.save();
+  rr(ctx, x, y, w, h, r);
+  ctx.clip();
+  const sheen = ctx.createLinearGradient(0, y, 0, y + h * 0.5);
+  sheen.addColorStop(0, strong ? "rgba(26,140,255,0.16)" : "rgba(26,140,255,0.07)");
+  sheen.addColorStop(1, "rgba(26,140,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+
+  const border = ctx.createLinearGradient(x + w, y, x, y + h);
+  border.addColorStop(0, strong ? "rgba(34,211,238,0.75)" : "rgba(34,211,238,0.35)");
+  border.addColorStop(0.45, "rgba(26,140,255,0.28)");
+  border.addColorStop(1, "rgba(26,140,255,0.08)");
+  ctx.strokeStyle = border;
+  ctx.lineWidth = 2;
+  rr(ctx, x + 1, y + 1, w - 2, h - 2, r);
+  ctx.stroke();
+}
+
+/** Round flag badge — emoji flag, or a symbol (₮) for USDT. */
+function drawFlagBadge(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, flag: string) {
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.45)";
+  ctx.shadowBlur = 28;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = C.navy;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+  ctx.strokeStyle = brandGradient(ctx, cx - r, cy - r, cx + r, cy + r);
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const isEmoji = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(flag);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.direction = "ltr";
+  if (isEmoji) {
+    ctx.font = `${Math.round(r * 1.05)}px ${EMOJI}`;
+    ctx.fillStyle = "#fff";
+  } else {
+    ctx.font = `700 ${Math.round(r * 1.05)}px ${MONO}`;
+    ctx.fillStyle = C.cyan;
+  }
+  ctx.fillText(flag, cx, cy + r * 0.06);
+  ctx.textBaseline = "alphabetic";
+}
+
+function drawArrowLeft(ctx: CanvasRenderingContext2D, x0: number, x1: number, y: number) {
+  // Dashed gradient track from right (x1) to left (x0) with an arrowhead at x0.
+  ctx.save();
+  ctx.setLineDash([2, 12]);
+  ctx.lineCap = "round";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = brandGradient(ctx, x0, y, x1, y);
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(x0 + 24, y);
+  ctx.stroke();
+  ctx.restore();
+
+  // Centre chip
+  const cx = (x0 + x1) / 2;
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.6)";
+  ctx.shadowBlur = 30;
+  ctx.beginPath();
+  ctx.arc(cx, y, 30, 0, Math.PI * 2);
+  ctx.fillStyle = brandGradient(ctx, cx - 30, y - 30, cx + 30, y + 30);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = C.navy;
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx + 11, y);
+  ctx.lineTo(cx - 11, y);
+  ctx.moveTo(cx - 2, y - 9);
+  ctx.lineTo(cx - 11, y);
+  ctx.lineTo(cx - 2, y + 9);
+  ctx.stroke();
+
+  // Arrowhead at the destination
+  ctx.fillStyle = C.primary;
+  ctx.beginPath();
+  ctx.moveTo(x0, y);
+  ctx.lineTo(x0 + 18, y - 11);
+  ctx.lineTo(x0 + 18, y + 11);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawDownBadge(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.55)";
+  ctx.shadowBlur = 24;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+  ctx.fillStyle = brandGradient(ctx, cx - 26, cy - 26, cx + 26, cy + 26);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = C.navy;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 10);
+  ctx.lineTo(cx, cy + 10);
+  ctx.moveTo(cx - 8, cy + 3);
+  ctx.lineTo(cx, cy + 11);
+  ctx.lineTo(cx + 8, cy + 3);
+  ctx.stroke();
+}
+
+function drawChart(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -173,47 +326,93 @@ function drawSparkline(
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const coords = points.map((p, i) => ({
+  const pts = points.map((p, i) => ({
     x: x + (i / (points.length - 1)) * w,
-    y: y + (1 - (p.marketPrice - min) / range) * h,
+    y: y + 8 + (1 - (p.marketPrice - min) / range) * (h - 16),
   }));
 
-  ctx.beginPath();
-  coords.forEach((c, i) => (i === 0 ? ctx.moveTo(c.x, c.y) : ctx.lineTo(c.x, c.y)));
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
-  ctx.lineJoin = "round";
-  ctx.stroke();
+  const trace = () => {
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1];
+      const p1 = pts[i];
+      const mx = (p0.x + p1.x) / 2;
+      ctx.bezierCurveTo(mx, p0.y, mx, p1.y, p1.x, p1.y);
+    }
+  };
 
-  const last = coords[coords.length - 1];
+  // Baseline guides
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  for (const gy of [y, y + h / 2, y + h]) {
+    ctx.beginPath();
+    ctx.moveTo(x, gy);
+    ctx.lineTo(x + w, gy);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Area fill
+  const area = ctx.createLinearGradient(0, y, 0, y + h);
+  area.addColorStop(0, hexA(color, 0.38));
+  area.addColorStop(1, hexA(color, 0));
   ctx.beginPath();
-  ctx.fillStyle = color;
-  ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+  trace();
+  ctx.lineTo(pts[pts.length - 1].x, y + h);
+  ctx.lineTo(pts[0].x, y + h);
+  ctx.closePath();
+  ctx.fillStyle = area;
   ctx.fill();
+
+  // Line with glow
+  ctx.save();
+  ctx.shadowColor = hexA(color, 0.8);
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  trace();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.restore();
+
+  // Last point
+  const last = pts[pts.length - 1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 14, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(color, 0.25);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = color;
+  ctx.stroke();
 }
 
-async function createQrCanvas(text: string, size: number): Promise<HTMLCanvasElement | null> {
+async function createQrCanvas(data: string, size: number): Promise<HTMLCanvasElement | null> {
   try {
     const mod = await import("qrcode-generator");
     const qrcode = mod.default;
     const qr = qrcode(0, "M");
-    qr.addData(text);
+    qr.addData(data);
     qr.make();
     const count = qr.getModuleCount();
-    const cellSize = Math.max(1, Math.floor(size / count));
+    const cell = Math.max(1, Math.floor(size / count));
     const canvas = document.createElement("canvas");
-    canvas.width = cellSize * count;
-    canvas.height = cellSize * count;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#030B1F";
-    for (let row = 0; row < count; row++) {
-      for (let col = 0; col < count; col++) {
-        if (qr.isDark(row, col)) {
-          ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-        }
+    canvas.width = cell * count;
+    canvas.height = cell * count;
+    const q = canvas.getContext("2d");
+    if (!q) return null;
+    q.fillStyle = "#FFFFFF";
+    q.fillRect(0, 0, canvas.width, canvas.height);
+    q.fillStyle = C.navy;
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (qr.isDark(r, c)) q.fillRect(c * cell, r * cell, cell, cell);
       }
     }
     return canvas;
@@ -224,224 +423,240 @@ async function createQrCanvas(text: string, size: number): Promise<HTMLCanvasEle
 
 export async function createShareCardBlob(params: ShareCardParams): Promise<Blob | null> {
   await loadFonts();
-  const [logo, qrCanvas] = await Promise.all([
-    loadImage("/logo-icon.png"),
-    createQrCanvas("https://jodatransfer.com", 480),
-  ]);
-
-  const hasHistory = (params.history?.length ?? 0) >= 2;
-
-  // Layout is computed top-down so every section's position depends on the
-  // one before it — no fixed "HEIGHT minus a guess" offsets that can leave
-  // dead space or clip content.
-  const panelY = 330;
-  const panelX = 90;
-  const panelW = WIDTH - 180;
-  const sparklineTop = panelY + 300;
-  const sparklineH = 70;
-  const pillHeight = 62;
-  const pillY = panelY + 300 + sparklineH + 24;
-  const panelH = pillY + pillHeight + 34 - panelY;
-  const panelBottom = panelY + panelH;
-  const captionY = panelBottom + 56;
-  const qrY = captionY + 40;
-  const qrSize = 150;
-  const qrLabelY = qrY + qrSize + 34;
-  const dividerY = qrLabelY + 36;
-  const ctaTop = dividerY + 40;
-  const ctaHeight = 100;
-  const HEIGHT = ctaTop + ctaHeight + 100;
+  const [logo, qr] = await Promise.all([loadImage("/logo-icon.png"), createQrCanvas("https://jodatransfer.com", 440)]);
 
   const canvas = document.createElement("canvas");
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  const pillColor = trendColorHex(params.trendColor);
+  const accent = trendHex(params.trendColor);
+  const history = params.history && params.history.length >= 2 ? params.history : null;
 
-  // Background
-  ctx.fillStyle = COLORS.bg;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  drawBackground(ctx);
 
-  // Soft blue glow, top of card
-  const glow = ctx.createRadialGradient(WIDTH / 2, 220, 40, WIDTH / 2, 220, 560);
-  glow.addColorStop(0, "rgba(0,132,253,0.26)");
-  glow.addColorStop(1, "rgba(0,132,253,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  drawTexture(ctx, WIDTH, HEIGHT);
-
-  // Outer frame
-  ctx.strokeStyle = COLORS.border;
+  // ---------- Header ----------
+  const tile = 84;
+  const tileX = W - M - tile;
+  const tileY = 58;
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.55)";
+  ctx.shadowBlur = 40;
+  rr(ctx, tileX, tileY, tile, tile, 24);
+  ctx.fillStyle = C.navy;
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
   ctx.lineWidth = 2;
-  roundRect(ctx, 22, 22, WIDTH - 44, HEIGHT - 44, 44);
+  rr(ctx, tileX + 1, tileY + 1, tile - 2, tile - 2, 23);
   ctx.stroke();
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  // Logo + wordmark lockup
-  const logoH = 46;
-  const logoW = logo ? (logo.width / logo.height) * logoH : 0;
-  ctx.direction = "ltr";
-  ctx.font = "700 44px 'IBM Plex Sans Arabic', sans-serif";
-  const flyWidth = ctx.measureText("Joda").width;
-  const rateWidth = ctx.measureText("transfer").width;
-  const lockupWidth = logoW + (logo ? 14 : 0) + flyWidth + rateWidth;
-  let cursorX = WIDTH / 2 - lockupWidth / 2;
-  const wordmarkY = 128;
-
   if (logo) {
-    ctx.drawImage(logo, cursorX, wordmarkY - logoH + 8, logoW, logoH);
-    cursorX += logoW + 14;
+    const lh = 62;
+    const lw = (logo.width / logo.height) * lh;
+    ctx.drawImage(logo, tileX + (tile - lw) / 2, tileY + (tile - lh) / 2, lw, lh);
   }
-  ctx.textAlign = "left";
-  ctx.fillStyle = COLORS.ink;
-  ctx.fillText("Joda", cursorX, wordmarkY);
-  ctx.fillStyle = COLORS.primary;
-  ctx.fillText("transfer", cursorX + flyWidth, wordmarkY);
-  ctx.textAlign = "center";
 
-  // Thin accent divider under the logo
-  ctx.strokeStyle = COLORS.primary;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(WIDTH / 2 - 44, 162);
-  ctx.lineTo(WIDTH / 2 + 44, 162);
-  ctx.stroke();
+  const wmFont = `700 44px ${AR}`;
+  const wmRight = tileX - 20;
+  const transferW = width(ctx, "transfer", wmFont);
+  text(ctx, "transfer", wmRight, 104, { font: wmFont, color: brandGradient(ctx, wmRight - transferW, 0, wmRight, 0), align: "right" });
+  text(ctx, "Joda", wmRight - transferW, 104, { font: wmFont, color: C.ink, align: "right" });
+  text(ctx, "عرض سعر تحويل", wmRight, 138, { font: `500 24px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
 
-  // Currency chips with an arrow between them
-  const chipY = 210;
-  const chipCenterGap = 210;
-  drawCurrencyChip(ctx, WIDTH / 2 - chipCenterGap, chipY, params.fromFlag, params.fromCode);
-  drawCurrencyChip(ctx, WIDTH / 2 + chipCenterGap, chipY, params.toFlag, params.toCode);
-  ctx.textAlign = "center";
-
-  ctx.fillStyle = COLORS.muted;
-  ctx.font = "600 30px 'IBM Plex Sans Arabic', sans-serif";
-  ctx.fillText("⇄", WIDTH / 2, chipY + 44);
-
-  // Result panel
-  ctx.fillStyle = "rgba(26,140,255,0.07)";
-  ctx.strokeStyle = "rgba(34,211,238,0.25)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, panelX, panelY, panelW, panelH, 32);
+  // Date chip (left)
+  const now = new Date();
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dateStr = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  const dateFont = `600 24px ${MONO}`;
+  const dw = width(ctx, dateStr, dateFont) + 48;
+  rr(ctx, M, 76, dw, 50, 25);
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
   ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+  text(ctx, dateStr, M + dw / 2, 109, { font: dateFont, color: C.muted, align: "center" });
 
-  ctx.font = "500 30px 'IBM Plex Sans Arabic', sans-serif";
-  ctx.fillStyle = COLORS.subtle;
-  ctx.fillText("المستلم يستلم", WIDTH / 2, panelY + 78);
+  // ---------- Main quote card ----------
+  const cx = M;
+  const cy = 186;
+  const cw = W - M * 2;
+  const ch = 690;
+  const pad = 52;
+  const inL = cx + pad;
+  const inR = cx + cw - pad;
+  drawCard(ctx, cx, cy, cw, ch, 44);
 
-  // Big result number — dynamically sized so it never overflows the panel
-  const amountText = `${params.amountReceived} ${params.toCode}`;
-  const maxAmountWidth = panelW - 80;
-  const amountSize = fitFontSize(ctx, amountText, "IBM Plex Mono", 700, 90, 46, maxAmountWidth);
-  ctx.direction = "ltr";
-  ctx.font = `700 ${amountSize}px 'IBM Plex Mono', monospace`;
-  ctx.fillStyle = COLORS.primary;
-  ctx.fillText(amountText, WIDTH / 2, panelY + 210);
-
-  // "مقابل X FROM"
-  ctx.direction = "ltr";
-  ctx.font = "500 32px 'IBM Plex Sans Arabic', sans-serif";
-  ctx.fillStyle = COLORS.muted;
-  const subtitleText = `مقابل ${params.amountSent} ${params.fromCode}`;
-  const subtitleSize = fitFontSize(ctx, subtitleText, "IBM Plex Sans Arabic", 500, 32, 22, maxAmountWidth);
-  ctx.font = `500 ${subtitleSize}px 'IBM Plex Sans Arabic', sans-serif`;
-  ctx.fillText(subtitleText, WIDTH / 2, panelY + 268);
-
-  // Sparkline — recent price trend, same data as the in-app chart
-  if (hasHistory && params.history) {
-    const sparkX = panelX + 60;
-    const sparkW = panelW - 120;
-    drawSparkline(ctx, sparkX, sparklineTop, sparkW, sparklineH, params.history, pillColor);
-    ctx.font = "500 22px 'IBM Plex Sans Arabic', sans-serif";
-    ctx.fillStyle = COLORS.subtle;
-    ctx.direction = "ltr";
-    ctx.textAlign = "left";
-    ctx.fillText(params.history[0].date, sparkX, sparklineTop + sparklineH + 24);
-    ctx.textAlign = "right";
-    ctx.fillText(params.history[params.history.length - 1].date, sparkX + sparkW, sparklineTop + sparklineH + 24);
-    ctx.textAlign = "center";
-  }
-
-  // Rate pill
-  ctx.font = "600 36px 'IBM Plex Mono', monospace";
-  const rateTextWidth = ctx.measureText(params.rateLine).width;
-  ctx.font = "500 26px 'IBM Plex Sans Arabic', sans-serif";
-  const trendTextWidth = params.trendLabel ? ctx.measureText(params.trendLabel).width : 0;
-
-  const pillContentWidth = rateTextWidth + (trendTextWidth ? trendTextWidth + 24 : 0);
-  const pillWidth = Math.min(pillContentWidth + 84, panelW - 40);
-  const pillX = WIDTH / 2 - pillWidth / 2;
-
-  ctx.fillStyle = `${pillColor}1F`;
-  ctx.strokeStyle = `${pillColor}66`;
-  ctx.lineWidth = 2;
-  roundRect(ctx, pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.fillStyle = pillColor;
-  ctx.arc(pillX + 34, pillY + pillHeight / 2, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.direction = "ltr";
-  ctx.textAlign = "left";
-  ctx.font = "600 36px 'IBM Plex Mono', monospace";
-  ctx.fillStyle = pillColor;
-  ctx.fillText(params.rateLine, pillX + 56, pillY + pillHeight / 2 + 12);
-
-  if (params.trendLabel) {
-    ctx.direction = "rtl";
-    ctx.font = "500 26px 'IBM Plex Sans Arabic', sans-serif";
-    ctx.fillText(params.trendLabel, pillX + 56 + rateTextWidth + 24, pillY + pillHeight / 2 + 9);
-  }
-  ctx.textAlign = "center";
-
-  // Updated caption, below the panel
-  if (params.updatedCaption) {
-    ctx.direction = "rtl";
-    ctx.font = "500 26px 'IBM Plex Sans Arabic', sans-serif";
-    ctx.fillStyle = COLORS.subtle;
-    ctx.fillText(params.updatedCaption, WIDTH / 2, captionY);
-  }
-
-  // QR code — links straight to the live site
-  if (qrCanvas) {
-    const qrX = WIDTH / 2 - qrSize / 2;
-    ctx.fillStyle = "#FFFFFF";
-    roundRect(ctx, qrX, qrY, qrSize, qrSize, 16);
-    ctx.fill();
-    const pad = qrSize * 0.09;
-    ctx.drawImage(qrCanvas, qrX + pad, qrY + pad, qrSize - pad * 2, qrSize - pad * 2);
-
-    ctx.direction = "ltr";
-    ctx.font = "500 24px 'IBM Plex Mono', monospace";
-    ctx.fillStyle = COLORS.subtle;
-    ctx.fillText("jodatransfer.com", WIDTH / 2, qrLabelY);
-  }
+  // Corridor row: from on the right, to on the left (RTL reading order)
+  const rowY = cy + 100;
+  const badgeR = 46;
+  drawFlagBadge(ctx, inR - badgeR, rowY, badgeR, params.fromFlag);
+  drawFlagBadge(ctx, inL + badgeR, rowY, badgeR, params.toFlag);
+  text(ctx, params.fromCode, inR - badgeR * 2 - 22, rowY + 14, { font: `700 44px ${MONO}`, color: C.ink, align: "right" });
+  text(ctx, params.toCode, inL + badgeR * 2 + 22, rowY + 14, { font: `700 44px ${MONO}`, color: C.ink, align: "left" });
+  const fromCodeW = width(ctx, params.fromCode, `700 44px ${MONO}`);
+  const toCodeW = width(ctx, params.toCode, `700 44px ${MONO}`);
+  drawArrowLeft(ctx, inL + badgeR * 2 + 22 + toCodeW + 28, inR - badgeR * 2 - 22 - fromCodeW - 28, rowY);
 
   // Divider
-  ctx.strokeStyle = COLORS.border;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(90, dividerY);
-  ctx.lineTo(WIDTH - 90, dividerY);
-  ctx.stroke();
+  const div1 = cy + 190;
+  ctx.fillStyle = C.line;
+  ctx.fillRect(inL, div1, inR - inL, 2);
 
-  // Footer CTA bar
-  ctx.fillStyle = COLORS.primary;
-  roundRect(ctx, 90, ctaTop, WIDTH - 180, ctaHeight, 50);
+  // You send
+  text(ctx, "المبلغ المُرسَل", inR, div1 + 54, { font: `600 28px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
+  const sentCodeFont = `600 34px ${MONO}`;
+  const sentCodeW = width(ctx, params.fromCode, sentCodeFont);
+  const sentSize = fit(ctx, params.amountSent, (s) => `600 ${s}px ${MONO}`, 60, 36, inR - inL - sentCodeW - 120);
+  text(ctx, params.amountSent, inR, div1 + 128, { font: `600 ${sentSize}px ${MONO}`, color: C.ink, align: "right" });
+  const sentW = width(ctx, params.amountSent, `600 ${sentSize}px ${MONO}`);
+  text(ctx, params.fromCode, inR - sentW - 16, div1 + 128, { font: sentCodeFont, color: C.subtle, align: "right" });
+
+  // Flow connector
+  const flowY = div1 + 178;
+  ctx.fillStyle = C.line;
+  ctx.fillRect(inL, flowY - 1, inR - inL - 90, 2);
+  drawDownBadge(ctx, inR - 26, flowY);
+
+  // They receive
+  text(ctx, "المستلم يستلم", inR, flowY + 66, { font: `600 28px ${AR}`, color: C.cyan, align: "right", dir: "rtl" });
+  const recvCodeFont = `700 48px ${MONO}`;
+  const recvCodeW = width(ctx, params.toCode, recvCodeFont);
+  const recvSize = fit(ctx, params.amountReceived, (s) => `700 ${s}px ${MONO}`, 104, 52, inR - inL - recvCodeW - 24);
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.45)";
+  ctx.shadowBlur = 30;
+  text(ctx, params.amountReceived, inR, flowY + 166, { font: `700 ${recvSize}px ${MONO}`, color: "#FFFFFF", align: "right" });
+  ctx.restore();
+  const recvW = width(ctx, params.amountReceived, `700 ${recvSize}px ${MONO}`);
+  const codeRight = inR - recvW - 18;
+  text(ctx, params.toCode, codeRight, flowY + 166, {
+    font: recvCodeFont,
+    color: brandGradient(ctx, codeRight - recvCodeW, 0, codeRight, 0),
+    align: "right",
+  });
+
+  // Rate footer inside the card
+  const rateBarY = cy + ch - 118;
+  rr(ctx, inL - 12, rateBarY, inR - inL + 24, 84, 26);
+  ctx.fillStyle = C.well;
   ctx.fill();
-  ctx.direction = "rtl";
-  ctx.font = "600 36px 'IBM Plex Sans Arabic', sans-serif";
-  ctx.fillStyle = COLORS.bg;
-  ctx.fillText("حوّل فلوسك على Jodatransfer", WIDTH / 2, ctaTop + ctaHeight / 2 + 13);
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  text(ctx, "سعر الصرف", inR + 4, rateBarY + 53, { font: `600 26px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
 
-  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png", 0.95));
+  let rateX = inL + 8;
+  // Live dot
+  ctx.beginPath();
+  ctx.arc(rateX + 8, rateBarY + 42, 14, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(accent, 0.22);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(rateX + 8, rateBarY + 42, 7, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
+  rateX += 34;
+  const rateFontSize = fit(ctx, params.rateLine, (s) => `600 ${s}px ${MONO}`, 32, 22, 470);
+  text(ctx, params.rateLine, rateX, rateBarY + 53, { font: `600 ${rateFontSize}px ${MONO}`, color: C.ink });
+  rateX += width(ctx, params.rateLine, `600 ${rateFontSize}px ${MONO}`) + 16;
+  if (params.trendLabel) {
+    const tf = `600 22px ${AR}`;
+    const tw = width(ctx, params.trendLabel, tf) + 28;
+    rr(ctx, rateX, rateBarY + 24, tw, 38, 19);
+    ctx.fillStyle = hexA(accent, 0.16);
+    ctx.fill();
+    text(ctx, params.trendLabel, rateX + tw / 2, rateBarY + 51, { font: tf, color: accent, align: "center", dir: "rtl" });
+  }
+
+  // ---------- History / features panel ----------
+  const px = M;
+  const py = cy + ch + 28;
+  const pw = cw;
+  const ph = 188;
+  drawCard(ctx, px, py, pw, ph, 36, false);
+
+  if (history) {
+    const first = history[0].marketPrice;
+    const lastP = history[history.length - 1].marketPrice;
+    const pct = first ? ((lastP - first) / first) * 100 : 0;
+    const pctText = `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(1)}%`;
+    text(ctx, "حركة السعر — آخر 30 يوم", px + pw - 36, py + 50, { font: `600 24px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
+    const pf = `700 24px ${MONO}`;
+    const pwid = width(ctx, pctText, pf) + 32;
+    rr(ctx, px + 36, py + 22, pwid, 40, 20);
+    ctx.fillStyle = hexA(accent, 0.16);
+    ctx.fill();
+    text(ctx, pctText, px + 36 + pwid / 2, py + 50, { font: pf, color: accent, align: "center" });
+    drawChart(ctx, px + 40, py + 78, pw - 80, 72, history, accent);
+    text(ctx, history[0].date, px + 40, py + 176, { font: `500 18px ${MONO}`, color: C.subtle });
+    text(ctx, history[history.length - 1].date, px + pw - 40, py + 176, { font: `500 18px ${MONO}`, color: C.subtle, align: "right" });
+  } else {
+    const feats = [
+      ["⚡", "تحويل خلال 30 دقيقة"],
+      ["🛡️", "سعر مثبّت عند التأكيد"],
+      ["💬", "دعم فوري واتساب"],
+    ];
+    const colW = pw / 3;
+    feats.forEach(([icon, label], i) => {
+      const colCx = px + pw - colW * i - colW / 2;
+      ctx.font = `40px ${EMOJI}`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.direction = "ltr";
+      ctx.textAlign = "center";
+      ctx.fillText(icon, colCx, py + 88);
+      text(ctx, label, colCx, py + 142, { font: `600 24px ${AR}`, color: C.ink, align: "center", dir: "rtl" });
+      if (i > 0) {
+        ctx.fillStyle = C.line;
+        ctx.fillRect(px + pw - colW * i, py + 40, 2, ph - 80);
+      }
+    });
+  }
+
+  // Updated caption
+  if (params.updatedCaption) {
+    text(ctx, params.updatedCaption, W / 2, py + ph + 42, { font: `500 22px ${AR}`, color: C.subtle, align: "center", dir: "rtl" });
+  }
+
+  // ---------- Footer CTA ----------
+  const fh = 128;
+  const fy = H - 52 - fh;
+  ctx.save();
+  ctx.shadowColor = "rgba(26,140,255,0.55)";
+  ctx.shadowBlur = 50;
+  ctx.shadowOffsetY = 12;
+  rr(ctx, M, fy, cw, fh, 40);
+  ctx.fillStyle = brandGradient(ctx, M, fy + fh, M + cw, fy);
+  ctx.fill();
+  ctx.restore();
+  noShadow(ctx);
+  // Gloss
+  ctx.save();
+  rr(ctx, M, fy, cw, fh, 40);
+  ctx.clip();
+  const gloss = ctx.createLinearGradient(0, fy, 0, fy + fh);
+  gloss.addColorStop(0, "rgba(255,255,255,0.22)");
+  gloss.addColorStop(0.5, "rgba(255,255,255,0)");
+  ctx.fillStyle = gloss;
+  ctx.fillRect(M, fy, cw, fh);
+  ctx.restore();
+
+  const qrSize = 100;
+  if (qr) {
+    const qx = M + 16;
+    const qy = fy + (fh - qrSize) / 2;
+    rr(ctx, qx, qy, qrSize, qrSize, 18);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fill();
+    const qp = 9;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(qr, qx + qp, qy + qp, qrSize - qp * 2, qrSize - qp * 2);
+    ctx.imageSmoothingEnabled = true;
+  }
+  const ctaR = M + cw - 40;
+  text(ctx, "حوّل فلوسك الآن مع جودة", ctaR, fy + 60, { font: `800 38px ${AR}`, color: C.navy, align: "right", dir: "rtl" });
+  text(ctx, "jodatransfer.com", ctaR, fy + 100, { font: `600 26px ${MONO}`, color: "rgba(2,8,23,0.72)", align: "right" });
+
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
 }
