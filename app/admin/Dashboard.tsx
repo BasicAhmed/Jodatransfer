@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeftRight, LogOut, Power, RefreshCw, TrendingUp, Wallet } from "lucide-react";
+import { ArrowLeftRight, LogOut, Phone, Power, RefreshCw, TrendingUp, Wallet } from "lucide-react";
 import {
   getRatesWithMargin,
   setPairMargin,
@@ -17,8 +17,9 @@ import { formatRelativeTime } from "@/lib/relativeTime";
 import { flowKey, getDisabledFlows, setDisabledFlows, setMarginPercent } from "@/lib/settings";
 import { PAIRS, CURRENCIES, type CurrencyCode } from "@/lib/corridors";
 import ProfitTab from "./ProfitTab";
+import ContactTab from "./ContactTab";
 
-type Tab = "rates" | "profit";
+type Tab = "rates" | "profit" | "contact";
 
 function Spinner() {
   return (
@@ -241,11 +242,12 @@ export default function AdminDashboard({ onSignOut }: { onSignOut: () => void })
       </header>
 
       <div className="mx-auto max-w-3xl px-5 pt-6">
-        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border/70 bg-surface2 p-1 shadow-well">
+        <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border/70 bg-surface2 p-1 shadow-well">
           {(
             [
               ["rates", "الأسعار", TrendingUp],
               ["profit", "الأرباح", Wallet],
+              ["contact", "التواصل", Phone],
             ] as const
           ).map(([value, label, Icon]) => (
             <button
@@ -260,7 +262,7 @@ export default function AdminDashboard({ onSignOut }: { onSignOut: () => void })
                   className="absolute inset-0 rounded-xl bg-primary shadow-glow"
                 />
               )}
-              <span className={`relative flex items-center gap-2 ${tab === value ? "text-bg" : "text-muted"}`}>
+              <span className={`relative flex items-center gap-1.5 ${tab === value ? "text-bg" : "text-muted"}`}>
                 <Icon size={15} /> {label}
               </span>
             </button>
@@ -277,6 +279,8 @@ export default function AdminDashboard({ onSignOut }: { onSignOut: () => void })
           <Spinner />
         ) : tab === "profit" ? (
           <ProfitTab rates={rates} defaultMargin={margin} onError={setSaveError} />
+        ) : tab === "contact" ? (
+          <ContactTab onError={setSaveError} />
         ) : (
           <div className="mt-5 space-y-4">
             {/* Controls */}

@@ -116,3 +116,42 @@ export async function setDisabledFlows(disabled: string[]) {
   if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
   await setDoc(doc(db, "settings", "flows"), { disabled, updatedAt: serverTimestamp() });
 }
+
+/** Public contact details shown on the site and used for every WhatsApp link.
+ *  Edited from /admin → التواصل. */
+export interface ContactSettings {
+  whatsapp: string; // as displayed, e.g. "+60 12-345 6789" — links use digits only
+  channel: string; // WhatsApp channel link, e.g. https://whatsapp.com/channel/… ("" = hidden)
+  email: string; // "" = hidden
+  hours: string; // "" = hidden
+}
+
+export const DEFAULT_CONTACT: ContactSettings = {
+  whatsapp: "+974 5113 1080",
+  channel: "",
+  email: "hello@jodatransfer.com",
+  hours: "السبت–الخميس، 9:00–22:00",
+};
+
+export async function getContactSettings(): Promise<ContactSettings> {
+  if (!firebaseEnabled || !db) return DEFAULT_CONTACT;
+  try {
+    const snap = await getDoc(doc(db, "settings", "contact"));
+    if (!snap.exists()) return DEFAULT_CONTACT;
+    const x = snap.data();
+    const str = (v: unknown, fallback: string) => (typeof v === "string" ? v : fallback);
+    return {
+      whatsapp: str(x.whatsapp, DEFAULT_CONTACT.whatsapp) || DEFAULT_CONTACT.whatsapp,
+      channel: str(x.channel, DEFAULT_CONTACT.channel),
+      email: str(x.email, DEFAULT_CONTACT.email),
+      hours: str(x.hours, DEFAULT_CONTACT.hours),
+    };
+  } catch {
+    return DEFAULT_CONTACT;
+  }
+}
+
+export async function setContactSettings(c: ContactSettings) {
+  if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
+  await setDoc(doc(db, "settings", "contact"), { ...c, updatedAt: serverTimestamp() });
+}

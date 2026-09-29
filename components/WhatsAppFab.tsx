@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import WhatsAppIcon from "./WhatsAppIcon";
-import { MESSAGES, whatsappLink } from "@/lib/whatsapp";
+import { MESSAGES } from "@/lib/whatsapp";
+import { useContact } from "./ContactContext";
 
 /** Floating WhatsApp button — appears once the visitor scrolls past the hero. */
 export default function WhatsAppFab() {
+  const { wa } = useContact();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function WhatsAppFab() {
     <AnimatePresence>
       {show && (
         <motion.a
-          href={whatsappLink(MESSAGES.general)}
+          href={wa(MESSAGES.general)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="تواصل معنا عبر واتساب"

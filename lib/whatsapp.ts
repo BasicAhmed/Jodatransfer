@@ -1,4 +1,10 @@
-export const WHATSAPP_NUMBER = "97451131080"; // international format, no +, no spaces
+/** Fallback only — the live number comes from /admin → التواصل (settings/contact). */
+export const WHATSAPP_NUMBER = "97451131080";
+
+/** "+60 12-345 6789" → "60123456789" (the format wa.me needs). */
+export function waDigits(number: string) {
+  return number.replace(/\D/g, "").replace(/^00/, "");
+}
 
 // Left-to-right mark: keeps "100,000 SDG" in the right order inside Arabic text.
 const LRM = "‎";
@@ -48,6 +54,6 @@ export const MESSAGES = {
   rates: "السلام عليكم 👋\nممكن تأكد لي أسعار اليوم؟",
 };
 
-export function whatsappLink(message: string, number = WHATSAPP_NUMBER): string {
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+export function whatsappLink(message: string, number: string = WHATSAPP_NUMBER): string {
+  return `https://wa.me/${waDigits(number) || WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }

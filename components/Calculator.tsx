@@ -11,7 +11,8 @@ import { createShareCardBlob } from "@/lib/shareCard";
 import { convertBetween, type RateRow } from "@/lib/rates";
 import { DISCOUNT_THRESHOLD_USDT, DISCOUNT_AMOUNT_USDT } from "@/lib/promotions";
 import { getRateHistory, type RateHistoryPoint } from "@/lib/rateHistory";
-import { buildAvailabilityMessage, buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
+import { buildAvailabilityMessage, buildOrderMessage } from "@/lib/whatsapp";
+import { useContact } from "./ContactContext";
 import RateHistoryChart from "./RateHistoryChart";
 
 type Mode = "send" | "receive";
@@ -41,6 +42,7 @@ function formatTyping(raw: string) {
 }
 
 export default function Calculator({ rates, disabledFlows = [] }: { rates: RateRow[]; disabledFlows?: string[] }) {
+  const { wa } = useContact();
   const [mode, setMode] = useState<Mode>("send");
   const [fromCode, setFromCode] = useState<CurrencyCode>(FROM_CURRENCIES[0].code);
   const toOptions = useMemo(() => validToCurrencies(fromCode), [fromCode]);
@@ -160,7 +162,7 @@ export default function Calculator({ rates, disabledFlows = [] }: { rates: RateR
     if (!toCurrency) return;
     if (unavailable) {
       window.open(
-        whatsappLink(buildAvailabilityMessage(fromCode, toCurrency.code, fromCurrency.currency, toCurrency.currency)),
+        wa(buildAvailabilityMessage(fromCode, toCurrency.code, fromCurrency.currency, toCurrency.currency)),
         "_blank",
         "noopener,noreferrer"
       );
@@ -179,7 +181,7 @@ export default function Calculator({ rates, disabledFlows = [] }: { rates: RateR
         ? `مؤهل لخصم ${DISCOUNT_AMOUNT_USDT} USDT (التحويل أكتر من ${DISCOUNT_THRESHOLD_USDT} USDT)`
         : undefined,
     });
-    window.open(whatsappLink(message), "_blank", "noopener,noreferrer");
+    window.open(wa(message), "_blank", "noopener,noreferrer");
   }
 
   async function shareResult() {

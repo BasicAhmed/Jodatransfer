@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ShieldCheck, Zap, Headphones } from "lucide-react";
 import WhatsAppIcon from "./WhatsAppIcon";
 import { SELECT_PAIR_EVENT, type SelectPairDetail } from "./Calculator";
-import { MESSAGES, whatsappLink } from "@/lib/whatsapp";
+import { MESSAGES } from "@/lib/whatsapp";
+import { useContact } from "./ContactContext";
 import { CURRENCIES, type CurrencyCode } from "@/lib/corridors";
 
 const rise = (delay: number) => ({
@@ -21,6 +22,7 @@ const STATS = [
 ];
 
 export default function Hero() {
+  const { wa } = useContact();
   return (
     <section id="top" className="relative overflow-hidden">
       {/* Backdrop: brand glow + faint dot grid that fades out */}
@@ -68,7 +70,7 @@ export default function Hero() {
             احسب تحويلك <ArrowLeft size={16} />
           </a>
           <a
-            href={whatsappLink(MESSAGES.general)}
+            href={wa(MESSAGES.general)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-whatsapp px-8 py-3.5 text-sm"
