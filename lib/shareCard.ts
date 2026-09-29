@@ -436,60 +436,75 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
 
   drawBackground(ctx);
 
-  // ---------- Header ----------
-  const tile = 84;
-  const tileX = W - M - tile;
-  const tileY = 58;
+  // ---------- Header: logo centred, wordmark + subtitle under it ----------
+  const tile = 108;
+  const tileX = W / 2 - tile / 2;
+  const tileY = 40;
+  // Halo behind the logo
+  const halo = ctx.createRadialGradient(W / 2, tileY + tile / 2, 10, W / 2, tileY + tile / 2, 170);
+  halo.addColorStop(0, "rgba(26,140,255,0.40)");
+  halo.addColorStop(1, "rgba(26,140,255,0)");
+  ctx.fillStyle = halo;
+  ctx.fillRect(W / 2 - 200, tileY - 90, 400, tile + 180);
   ctx.save();
-  ctx.shadowColor = "rgba(26,140,255,0.55)";
-  ctx.shadowBlur = 40;
-  rr(ctx, tileX, tileY, tile, tile, 24);
+  ctx.shadowColor = "rgba(26,140,255,0.6)";
+  ctx.shadowBlur = 44;
+  rr(ctx, tileX, tileY, tile, tile, 30);
   ctx.fillStyle = C.navy;
   ctx.fill();
   ctx.restore();
-  ctx.strokeStyle = "rgba(255,255,255,0.10)";
-  ctx.lineWidth = 2;
-  rr(ctx, tileX + 1, tileY + 1, tile - 2, tile - 2, 23);
+  ctx.strokeStyle = brandGradient(ctx, tileX, tileY + tile, tileX + tile, tileY);
+  ctx.lineWidth = 2.5;
+  rr(ctx, tileX + 1.25, tileY + 1.25, tile - 2.5, tile - 2.5, 29);
   ctx.stroke();
   if (logo) {
-    const lh = 62;
+    const lh = 82;
     const lw = (logo.width / logo.height) * lh;
     ctx.drawImage(logo, tileX + (tile - lw) / 2, tileY + (tile - lh) / 2, lw, lh);
   }
 
-  const wmFont = `700 44px ${AR}`;
-  const wmRight = tileX - 20;
+  const wmFont = `700 46px ${AR}`;
+  const jodaW = width(ctx, "Joda", wmFont);
   const transferW = width(ctx, "transfer", wmFont);
-  text(ctx, "transfer", wmRight, 104, { font: wmFont, color: brandGradient(ctx, wmRight - transferW, 0, wmRight, 0), align: "right" });
-  text(ctx, "Joda", wmRight - transferW, 104, { font: wmFont, color: C.ink, align: "right" });
-  text(ctx, "عرض سعر تحويل", wmRight, 138, { font: `500 24px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
+  const wmLeft = W / 2 - (jodaW + transferW) / 2;
+  const wmY = tileY + tile + 62;
+  text(ctx, "Joda", wmLeft, wmY, { font: wmFont, color: C.ink });
+  text(ctx, "transfer", wmLeft + jodaW, wmY, {
+    font: wmFont,
+    color: brandGradient(ctx, wmLeft + jodaW, 0, wmLeft + jodaW + transferW, 0),
+  });
 
-  // Date chip (left)
   const now = new Date();
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const dateStr = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
-  const dateFont = `600 24px ${MONO}`;
-  const dw = width(ctx, dateStr, dateFont) + 48;
-  rr(ctx, M, 76, dw, 50, 25);
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  const subFont = `500 24px ${AR}`;
+  const dateFont = `500 22px ${MONO}`;
+  const subLabel = "عرض سعر تحويل";
+  const sepGap = 18;
+  const subW = width(ctx, subLabel, subFont);
+  const dateW = width(ctx, dateStr, dateFont);
+  const subTotal = subW + sepGap * 2 + 6 + dateW;
+  const subY = wmY + 38;
+  const subRight = W / 2 + subTotal / 2;
+  text(ctx, subLabel, subRight, subY, { font: subFont, color: C.muted, align: "right", dir: "rtl" });
+  ctx.beginPath();
+  ctx.arc(subRight - subW - sepGap - 3, subY - 8, 3, 0, Math.PI * 2);
+  ctx.fillStyle = C.cyan;
   ctx.fill();
-  ctx.strokeStyle = C.line;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  text(ctx, dateStr, M + dw / 2, 109, { font: dateFont, color: C.muted, align: "center" });
+  text(ctx, dateStr, subRight - subW - sepGap * 2 - 6, subY, { font: dateFont, color: C.muted, align: "right" });
 
   // ---------- Main quote card ----------
   const cx = M;
-  const cy = 186;
+  const cy = 270;
   const cw = W - M * 2;
-  const ch = 690;
+  const ch = 640;
   const pad = 52;
   const inL = cx + pad;
   const inR = cx + cw - pad;
   drawCard(ctx, cx, cy, cw, ch, 44);
 
   // Corridor row: from on the right, to on the left (RTL reading order)
-  const rowY = cy + 100;
+  const rowY = cy + 90;
   const badgeR = 46;
   drawFlagBadge(ctx, inR - badgeR, rowY, badgeR, params.fromFlag);
   drawFlagBadge(ctx, inL + badgeR, rowY, badgeR, params.toFlag);
@@ -500,46 +515,46 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   drawArrowLeft(ctx, inL + badgeR * 2 + 22 + toCodeW + 28, inR - badgeR * 2 - 22 - fromCodeW - 28, rowY);
 
   // Divider
-  const div1 = cy + 190;
+  const div1 = cy + 170;
   ctx.fillStyle = C.line;
   ctx.fillRect(inL, div1, inR - inL, 2);
 
   // You send
-  text(ctx, "المبلغ المُرسَل", inR, div1 + 54, { font: `600 28px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
+  text(ctx, "المبلغ المُرسَل", inR, div1 + 50, { font: `600 28px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
   const sentCodeFont = `600 34px ${MONO}`;
   const sentCodeW = width(ctx, params.fromCode, sentCodeFont);
-  const sentSize = fit(ctx, params.amountSent, (s) => `600 ${s}px ${MONO}`, 60, 36, inR - inL - sentCodeW - 120);
-  text(ctx, params.amountSent, inR, div1 + 128, { font: `600 ${sentSize}px ${MONO}`, color: C.ink, align: "right" });
+  const sentSize = fit(ctx, params.amountSent, (s) => `600 ${s}px ${MONO}`, 56, 34, inR - inL - sentCodeW - 120);
+  text(ctx, params.amountSent, inR, div1 + 116, { font: `600 ${sentSize}px ${MONO}`, color: C.ink, align: "right" });
   const sentW = width(ctx, params.amountSent, `600 ${sentSize}px ${MONO}`);
-  text(ctx, params.fromCode, inR - sentW - 16, div1 + 128, { font: sentCodeFont, color: C.subtle, align: "right" });
+  text(ctx, params.fromCode, inR - sentW - 16, div1 + 116, { font: sentCodeFont, color: C.subtle, align: "right" });
 
   // Flow connector
-  const flowY = div1 + 178;
+  const flowY = div1 + 160;
   ctx.fillStyle = C.line;
   ctx.fillRect(inL, flowY - 1, inR - inL - 90, 2);
   drawDownBadge(ctx, inR - 26, flowY);
 
   // They receive
-  text(ctx, "المستلم يستلم", inR, flowY + 66, { font: `600 28px ${AR}`, color: C.cyan, align: "right", dir: "rtl" });
+  text(ctx, "المستلم يستلم", inR, flowY + 60, { font: `600 28px ${AR}`, color: C.cyan, align: "right", dir: "rtl" });
   const recvCodeFont = `700 48px ${MONO}`;
   const recvCodeW = width(ctx, params.toCode, recvCodeFont);
-  const recvSize = fit(ctx, params.amountReceived, (s) => `700 ${s}px ${MONO}`, 104, 52, inR - inL - recvCodeW - 24);
+  const recvSize = fit(ctx, params.amountReceived, (s) => `700 ${s}px ${MONO}`, 98, 50, inR - inL - recvCodeW - 24);
   ctx.save();
   ctx.shadowColor = "rgba(26,140,255,0.45)";
   ctx.shadowBlur = 30;
-  text(ctx, params.amountReceived, inR, flowY + 166, { font: `700 ${recvSize}px ${MONO}`, color: "#FFFFFF", align: "right" });
+  text(ctx, params.amountReceived, inR, flowY + 152, { font: `700 ${recvSize}px ${MONO}`, color: "#FFFFFF", align: "right" });
   ctx.restore();
   const recvW = width(ctx, params.amountReceived, `700 ${recvSize}px ${MONO}`);
   const codeRight = inR - recvW - 18;
-  text(ctx, params.toCode, codeRight, flowY + 166, {
+  text(ctx, params.toCode, codeRight, flowY + 152, {
     font: recvCodeFont,
     color: brandGradient(ctx, codeRight - recvCodeW, 0, codeRight, 0),
     align: "right",
   });
 
   // Rate footer inside the card
-  const rateBarY = cy + ch - 118;
-  rr(ctx, inL - 12, rateBarY, inR - inL + 24, 84, 26);
+  const rateBarY = cy + ch - 110;
+  rr(ctx, inL - 12, rateBarY, inR - inL + 24, 80, 26);
   ctx.fillStyle = C.well;
   ctx.fill();
   ctx.strokeStyle = C.line;
@@ -572,9 +587,9 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
 
   // ---------- History / features panel ----------
   const px = M;
-  const py = cy + ch + 28;
+  const py = cy + ch + 24;
   const pw = cw;
-  const ph = 188;
+  const ph = 168;
   drawCard(ctx, px, py, pw, ph, 36, false);
 
   if (history) {
@@ -582,16 +597,16 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
     const lastP = history[history.length - 1].marketPrice;
     const pct = first ? ((lastP - first) / first) * 100 : 0;
     const pctText = `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(1)}%`;
-    text(ctx, "حركة السعر — آخر 30 يوم", px + pw - 36, py + 50, { font: `600 24px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
+    text(ctx, "حركة السعر — آخر 30 يوم", px + pw - 36, py + 46, { font: `600 24px ${AR}`, color: C.muted, align: "right", dir: "rtl" });
     const pf = `700 24px ${MONO}`;
     const pwid = width(ctx, pctText, pf) + 32;
-    rr(ctx, px + 36, py + 22, pwid, 40, 20);
+    rr(ctx, px + 36, py + 18, pwid, 40, 20);
     ctx.fillStyle = hexA(accent, 0.16);
     ctx.fill();
-    text(ctx, pctText, px + 36 + pwid / 2, py + 50, { font: pf, color: accent, align: "center" });
-    drawChart(ctx, px + 40, py + 78, pw - 80, 72, history, accent);
-    text(ctx, history[0].date, px + 40, py + 176, { font: `500 18px ${MONO}`, color: C.subtle });
-    text(ctx, history[history.length - 1].date, px + pw - 40, py + 176, { font: `500 18px ${MONO}`, color: C.subtle, align: "right" });
+    text(ctx, pctText, px + 36 + pwid / 2, py + 46, { font: pf, color: accent, align: "center" });
+    drawChart(ctx, px + 40, py + 70, pw - 80, 62, history, accent);
+    text(ctx, history[0].date, px + 40, py + 156, { font: `500 18px ${MONO}`, color: C.subtle });
+    text(ctx, history[history.length - 1].date, px + pw - 40, py + 156, { font: `500 18px ${MONO}`, color: C.subtle, align: "right" });
   } else {
     const feats = [
       ["⚡", "تحويل خلال 30 دقيقة"],
@@ -605,8 +620,8 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
       ctx.fillStyle = "#FFFFFF";
       ctx.direction = "ltr";
       ctx.textAlign = "center";
-      ctx.fillText(icon, colCx, py + 88);
-      text(ctx, label, colCx, py + 142, { font: `600 24px ${AR}`, color: C.ink, align: "center", dir: "rtl" });
+      ctx.fillText(icon, colCx, py + 78);
+      text(ctx, label, colCx, py + 128, { font: `600 24px ${AR}`, color: C.ink, align: "center", dir: "rtl" });
       if (i > 0) {
         ctx.fillStyle = C.line;
         ctx.fillRect(px + pw - colW * i, py + 40, 2, ph - 80);
@@ -616,12 +631,12 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
 
   // Updated caption
   if (params.updatedCaption) {
-    text(ctx, params.updatedCaption, W / 2, py + ph + 42, { font: `500 22px ${AR}`, color: C.subtle, align: "center", dir: "rtl" });
+    text(ctx, params.updatedCaption, W / 2, py + ph + 38, { font: `500 22px ${AR}`, color: C.subtle, align: "center", dir: "rtl" });
   }
 
   // ---------- Footer CTA ----------
-  const fh = 128;
-  const fy = H - 52 - fh;
+  const fh = 118;
+  const fy = H - 44 - fh;
   ctx.save();
   ctx.shadowColor = "rgba(26,140,255,0.55)";
   ctx.shadowBlur = 50;
@@ -642,7 +657,7 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
   ctx.fillRect(M, fy, cw, fh);
   ctx.restore();
 
-  const qrSize = 100;
+  const qrSize = 94;
   if (qr) {
     const qx = M + 16;
     const qy = fy + (fh - qrSize) / 2;
@@ -655,8 +670,8 @@ export async function createShareCardBlob(params: ShareCardParams): Promise<Blob
     ctx.imageSmoothingEnabled = true;
   }
   const ctaR = M + cw - 40;
-  text(ctx, "حوّل فلوسك الآن مع جودة", ctaR, fy + 60, { font: `800 38px ${AR}`, color: C.navy, align: "right", dir: "rtl" });
-  text(ctx, "jodatransfer.com", ctaR, fy + 100, { font: `600 26px ${MONO}`, color: "rgba(2,8,23,0.72)", align: "right" });
+  text(ctx, "حوّل فلوسك الآن مع جودة", ctaR, fy + 56, { font: `800 38px ${AR}`, color: C.navy, align: "right", dir: "rtl" });
+  text(ctx, "jodatransfer.com", ctaR, fy + 94, { font: `600 26px ${MONO}`, color: "rgba(2,8,23,0.72)", align: "right" });
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
 }

@@ -1,72 +1,80 @@
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
-  setDoc,
-  getDoc,
   getDocs,
   orderBy,
   query,
   limit as fbLimit,
   serverTimestamp,
-  increment,
 } from "firebase/firestore";
 import { db, firebaseEnabled } from "./firebase";
+import type { CurrencyCode } from "./corridors";
 
+/** One logged sale. Stored as its own document in the `sales` collection
+ *  (same collection the Firestore rules already protect), so entries can be
+ *  deleted individually. USD value and profit are fixed at the moment the
+ *  sale is logged — later rate or margin changes never rewrite history. */
 export interface SaleEntry {
+  id: string;
   date: string; // YYYY-MM-DD
-  usdSold: number;
-  profit: number;
-  updatedAt: string | null;
+  currency: CurrencyCode | "USD";
+  amount: number; // in `currency`
+  usd: number; // USD value at logging time
+  margin: number; // % used for the profit
+  profit: number; // USD
+  createdAt: string | null;
 }
 
-/** Adds a transaction amount to the given day's running total (does NOT
- *  overwrite — each call accumulates). Profit for this addition is computed
- *  from the margin at the time of the call, so changing margin mid-day
- *  doesn't retroactively change earlier entries' profit contribution. */
-export async function addSale(date: string, amountDelta: number, marginPercent: number): Promise<void> {
+export async function addSale(entry: Omit<SaleEntry, "id" | "createdAt" | "profit">): Promise<SaleEntry> {
   if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
-  const profitDelta = amountDelta * (marginPercent / 100);
-  await setDoc(
-    doc(db, "sales", date),
-    {
-      date,
-      usdSold: increment(amountDelta),
-      profit: increment(profitDelta),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  const profit = entry.usd * (entry.margin / 100);
+  const ref = await addDoc(collection(db, "sales"), {
+    ...entry,
+    profit,
+    createdAt: serverTimestamp(),
+  });
+  return { ...entry, id: ref.id, profit, createdAt: new Date().toISOString() };
 }
 
-export async function getTodaySale(date: string): Promise<SaleEntry | null> {
-  if (!firebaseEnabled || !db) return null;
-  try {
-    const snap = await getDoc(doc(db, "sales", date));
-    if (!snap.exists()) return null;
-    const data = snap.data();
-    return {
-      date: data.date,
-      usdSold: data.usdSold ?? 0,
-      profit: data.profit ?? 0,
-      updatedAt: data.updatedAt?.toDate?.().toISOString?.() ?? null,
-    };
-  } catch {
-    return null;
-  }
+export async function deleteSale(id: string): Promise<void> {
+  if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
+  await deleteDoc(doc(db, "sales", id));
 }
 
-export async function getRecentSales(days = 30): Promise<SaleEntry[]> {
+/** Newest first. Also reads the older one-doc-per-day format (usdSold +
+ *  profit, no currency) so nothing logged before this change disappears. */
+export async function getSales(max = 2000): Promise<SaleEntry[]> {
   if (!firebaseEnabled || !db) return [];
   try {
-    const q = query(collection(db, "sales"), orderBy("date", "desc"), fbLimit(days));
+    const q = query(collection(db, "sales"), orderBy("date", "desc"), fbLimit(max));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
+    return snap.docs.map((d): SaleEntry => {
+      const x = d.data();
+      const createdAt = (x.createdAt ?? x.updatedAt)?.toDate?.().toISOString?.() ?? null;
+      if (typeof x.currency !== "string") {
+        const usd = Number(x.usdSold ?? 0);
+        return {
+          id: d.id,
+          date: x.date,
+          currency: "USD" as const,
+          amount: usd,
+          usd,
+          margin: usd ? (Number(x.profit ?? 0) / usd) * 100 : 0,
+          profit: Number(x.profit ?? 0),
+          createdAt,
+        };
+      }
       return {
-        date: data.date,
-        usdSold: data.usdSold ?? 0,
-        profit: data.profit ?? 0,
-        updatedAt: data.updatedAt?.toDate?.().toISOString?.() ?? null,
+        id: d.id,
+        date: x.date,
+        currency: x.currency as SaleEntry["currency"],
+        amount: Number(x.amount ?? 0),
+        usd: Number(x.usd ?? 0),
+        margin: Number(x.margin ?? 0),
+        profit: Number(x.profit ?? 0),
+        createdAt,
       };
     });
   } catch {

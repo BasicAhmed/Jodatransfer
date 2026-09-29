@@ -92,3 +92,27 @@ export async function setStudents(students: Student[]) {
   if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
   await setDoc(doc(db, "settings", "students"), { students, updatedAt: serverTimestamp() });
 }
+
+/** Flow keys look like "SDG_MYR" (from_to) — one per DIRECTION, so a pair
+ *  can be open one way and closed the other. Anything not listed is active.
+ *  Public read so the calculator can mark closed directions. */
+export function flowKey(from: string, to: string) {
+  return `${from}_${to}`;
+}
+
+export async function getDisabledFlows(): Promise<string[]> {
+  if (!firebaseEnabled || !db) return [];
+  try {
+    const snap = await getDoc(doc(db, "settings", "flows"));
+    if (!snap.exists()) return [];
+    const list = snap.data().disabled;
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setDisabledFlows(disabled: string[]) {
+  if (!firebaseEnabled || !db) throw new Error("Firebase is not configured — see .env.example.");
+  await setDoc(doc(db, "settings", "flows"), { disabled, updatedAt: serverTimestamp() });
+}

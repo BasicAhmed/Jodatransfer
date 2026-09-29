@@ -20,6 +20,7 @@ const config: Config = {
           50: "#EAF4FF",
         },
         accent: "rgb(var(--color-accent) / <alpha-value>)",
+        whatsapp: { DEFAULT: "#25D366", dark: "#1DA851" },
         brand: {
           navy: "#030B1F",
           blue: "#0084FD",

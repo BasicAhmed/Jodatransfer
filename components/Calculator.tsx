@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowLeftRight, ChevronDown, MessageCircle, Share2, Check } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Ban, ChevronDown, Share2, Check } from "lucide-react";
+import WhatsAppIcon from "./WhatsAppIcon";
 import { FROM_CURRENCIES, validToCurrencies, CURRENCIES, isMultiplyCorridor, type CurrencyCode } from "@/lib/corridors";
 import { formatRate } from "@/lib/format";
 import { formatRelativeTime } from "@/lib/relativeTime";
@@ -10,7 +11,7 @@ import { createShareCardBlob } from "@/lib/shareCard";
 import { convertBetween, type RateRow } from "@/lib/rates";
 import { DISCOUNT_THRESHOLD_USDT, DISCOUNT_AMOUNT_USDT } from "@/lib/promotions";
 import { getRateHistory, type RateHistoryPoint } from "@/lib/rateHistory";
-import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
+import { buildAvailabilityMessage, buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
 import RateHistoryChart from "./RateHistoryChart";
 
 type Mode = "send" | "receive";
@@ -27,7 +28,19 @@ const QUICK_AMOUNTS: Record<CurrencyCode, number[]> = {
   SAR: [200, 500, 2000],
 };
 
-export default function Calculator({ rates }: { rates: RateRow[] }) {
+/** Custom event other sections fire to preselect a pair and jump to the calculator. */
+export const SELECT_PAIR_EVENT = "joda:select-pair";
+export type SelectPairDetail = { from?: CurrencyCode; to?: CurrencyCode };
+
+/** "100000.5" → "100,000.5" while typing (keeps a trailing dot / decimals as typed). */
+function formatTyping(raw: string) {
+  if (!raw) return "";
+  const [int, dec] = raw.split(".");
+  const intFmt = int ? Number(int).toLocaleString("en-US") : "0";
+  return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
+}
+
+export default function Calculator({ rates, disabledFlows = [] }: { rates: RateRow[]; disabledFlows?: string[] }) {
   const [mode, setMode] = useState<Mode>("send");
   const [fromCode, setFromCode] = useState<CurrencyCode>(FROM_CURRENCIES[0].code);
   const toOptions = useMemo(() => validToCurrencies(fromCode), [fromCode]);
@@ -45,6 +58,23 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
   const rate = rates.find((r) => r.from === fromCode && r.to === toCurrency?.code);
 
   const involvesSudan = fromCode === "SDG" || toCurrency?.code === "SDG";
+  const isOff = (from: CurrencyCode, to: CurrencyCode) => disabledFlows.includes(`${from}_${to}`);
+  const unavailable = !!toCurrency && isOff(fromCode, toCurrency.code);
+
+  // Let the hero chips / rates table preselect a pair and scroll here.
+  useEffect(() => {
+    const onSelect = (e: Event) => {
+      const { from, to } = (e as CustomEvent<SelectPairDetail>).detail ?? {};
+      if (from) {
+        setFromCode(from);
+        const options = validToCurrencies(from);
+        setToCode(to && options.some((c) => c.code === to) ? to : options[0]?.code);
+      }
+      document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener(SELECT_PAIR_EVENT, onSelect);
+    return () => window.removeEventListener(SELECT_PAIR_EVENT, onSelect);
+  }, []);
 
   const [history, setHistory] = useState<RateHistoryPoint[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -127,14 +157,26 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
   }
 
   function orderNow() {
-    if (!rate || !toCurrency) return;
+    if (!toCurrency) return;
+    if (unavailable) {
+      window.open(
+        whatsappLink(buildAvailabilityMessage(fromCode, toCurrency.code, fromCurrency.currency, toCurrency.currency)),
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+    if (!rate) return;
     const message = buildOrderMessage({
       amountReceived: finalAmountReceived.toLocaleString("en-US", { maximumFractionDigits: 2 }),
       toCurrency: toCurrency.code,
+      toName: toCurrency.currency,
       amountSent: amountSent.toLocaleString("en-US", { maximumFractionDigits: 2 }),
       fromCurrency: fromCurrency.code,
+      fromName: fromCurrency.currency,
+      rateLine: rateText,
       discountNote: discountApplies
-        ? `(مؤهل لخصم ${DISCOUNT_AMOUNT_USDT} USDT — التحويل أكتر من ${DISCOUNT_THRESHOLD_USDT} USDT)`
+        ? `مؤهل لخصم ${DISCOUNT_AMOUNT_USDT} USDT (التحويل أكتر من ${DISCOUNT_THRESHOLD_USDT} USDT)`
         : undefined,
     });
     window.open(whatsappLink(message), "_blank", "noopener,noreferrer");
@@ -309,11 +351,17 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                       aria-label={`${label} عملة`}
                       className="absolute inset-0 cursor-pointer opacity-0"
                     >
-                      {options.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.name} ({c.code})
-                        </option>
-                      ))}
+                      {options.map((c) => {
+                        const off =
+                          label === "من"
+                            ? validToCurrencies(c.code).every((t) => isOff(c.code, t.code))
+                            : isOff(fromCode, c.code);
+                        return (
+                          <option key={c.code} value={c.code}>
+                            {c.name} ({c.code}){off ? " — غير متاح حالياً" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                   </label>
                 ))}
@@ -340,11 +388,18 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                 </span>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    min={0}
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    autoComplete="off"
+                    value={formatTyping(amount)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/[^0-9.]/g, "");
+                      const [int, ...rest] = clean.split(".");
+                      const next = rest.length ? `${int}.${rest.join("").slice(0, 2)}` : int;
+                      setAmount(next.replace(/^0+(?=\d)/, ""));
+                    }}
+                    onFocus={(e) => e.currentTarget.select()}
+                    aria-label="المبلغ"
                     dir="ltr"
                     className="field py-3.5 pl-4 pr-20 text-left font-mono text-2xl font-bold"
                   />
@@ -372,8 +427,36 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
                 </div>
               )}
 
+              <AnimatePresence initial={false}>
+                {unavailable && toCurrency && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div
+                      role="status"
+                      className="mt-4 flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-3.5 text-sm text-ink"
+                    >
+                      <span className="mt-0.5 rounded-full bg-red-500/15 p-1.5 text-red-500">
+                        <Ban size={14} />
+                      </span>
+                      <div>
+                        <p className="font-semibold">
+                          التحويل من {fromCurrency.currency} إلى {toCurrency.currency} غير متاح حالياً
+                        </p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                          تقدر تشوف السعر التقريبي، لكن الطلب موقوف مؤقتاً. راسلنا عشان نبلغك أول ما يتوفر.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Result */}
-              <div className="relative mt-4 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 text-center shadow-well">
+              <div className={`relative mt-4 overflow-hidden rounded-2xl border border-primary/25 transition-opacity ${unavailable ? "opacity-60" : ""} bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-5 text-center shadow-well`}>
                 <div className="flex items-center justify-center gap-2">
                   <p className="text-xs font-medium text-muted">المستلم يستلم</p>
                   {rate && (
@@ -501,12 +584,17 @@ export default function Calculator({ rates }: { rates: RateRow[] }) {
 
               <motion.button
                 onClick={orderNow}
-                disabled={!rate || amountNum <= 0}
+                disabled={!unavailable && (!rate || amountNum <= 0)}
                 whileTap={{ scale: 0.98 }}
-                className="btn-primary mt-2 w-full py-4 text-sm"
+                className="btn-whatsapp mt-2 w-full py-4 text-base"
               >
-                <MessageCircle size={16} /> اطلب الآن عبر واتساب <ArrowLeft size={16} />
+                <WhatsAppIcon size={20} />
+                {unavailable ? "اسأل عن التوفّر عبر واتساب" : "اطلب الآن عبر واتساب"}
+                <ArrowLeft size={16} />
               </motion.button>
+              <p className="mt-2 text-center text-[11px] text-subtle">
+                يفتح واتساب ورسالتك جاهزة بكل التفاصيل — ما عليك إلا ترسلها.
+              </p>
             </div>
           </div>
         </div>

@@ -1,4 +1,6 @@
 import { getRates } from "@/lib/rates";
+import { getDisabledFlows } from "@/lib/settings";
+import WhatsAppFab from "@/components/WhatsAppFab";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import RateTicker from "@/components/RateTicker";
@@ -14,21 +16,22 @@ import Footer from "@/components/Footer";
 export const revalidate = 60; // re-fetch rates at most once a minute
 
 export default async function Home() {
-  const rates = await getRates();
+  const [rates, disabledFlows] = await Promise.all([getRates(), getDisabledFlows()]);
 
   return (
     <>
       <Nav />
       <Hero />
-      <Calculator rates={rates} />
-      <RateTicker rates={rates} />
-      <RatesTable rates={rates} />
+      <Calculator rates={rates} disabledFlows={disabledFlows} />
+      <RateTicker rates={rates} disabledFlows={disabledFlows} />
+      <RatesTable rates={rates} disabledFlows={disabledFlows} />
       <WhyChoose />
       <HowItWorks />
       <Reviews />
       <FAQ />
       <Contact />
       <Footer />
+      <WhatsAppFab />
     </>
   );
 }

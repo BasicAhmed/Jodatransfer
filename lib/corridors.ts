@@ -4,16 +4,17 @@ export interface CurrencyInfo {
   code: CurrencyCode;
   name: string; // Arabic display name
   flag: string; // emoji flag, or a symbol for non-country currencies like USDT
+  currency: string; // Arabic currency name, used in WhatsApp messages
 }
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
-  SDG: { code: "SDG", name: "السودان", flag: "🇸🇩" },
-  MYR: { code: "MYR", name: "ماليزيا", flag: "🇲🇾" },
-  EGP: { code: "EGP", name: "مصر", flag: "🇪🇬" },
-  RUB: { code: "RUB", name: "روسيا", flag: "🇷🇺" },
-  USDT: { code: "USDT", name: "USDT (تيثر)", flag: "₮" },
-  AED: { code: "AED", name: "الإمارات", flag: "🇦🇪" },
-  SAR: { code: "SAR", name: "السعودية", flag: "🇸🇦" },
+  SDG: { code: "SDG", name: "السودان", flag: "🇸🇩", currency: "الجنيه السوداني" },
+  MYR: { code: "MYR", name: "ماليزيا", flag: "🇲🇾", currency: "الرنقت الماليزي" },
+  EGP: { code: "EGP", name: "مصر", flag: "🇪🇬", currency: "الجنيه المصري" },
+  RUB: { code: "RUB", name: "روسيا", flag: "🇷🇺", currency: "الروبل الروسي" },
+  USDT: { code: "USDT", name: "USDT (تيثر)", flag: "₮", currency: "تيثر" },
+  AED: { code: "AED", name: "الإمارات", flag: "🇦🇪", currency: "الدرهم الإماراتي" },
+  SAR: { code: "SAR", name: "السعودية", flag: "🇸🇦", currency: "الريال السعودي" },
 };
 
 export interface CurrencyPair {

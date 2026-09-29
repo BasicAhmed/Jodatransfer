@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, MessageCircle, ShieldCheck, Zap, Headphones } from "lucide-react";
-import { whatsappLink } from "@/lib/whatsapp";
-import { CURRENCIES } from "@/lib/corridors";
+import { ArrowLeft, ShieldCheck, Zap, Headphones } from "lucide-react";
+import WhatsAppIcon from "./WhatsAppIcon";
+import { SELECT_PAIR_EVENT, type SelectPairDetail } from "./Calculator";
+import { MESSAGES, whatsappLink } from "@/lib/whatsapp";
+import { CURRENCIES, type CurrencyCode } from "@/lib/corridors";
 
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 16 },
@@ -66,26 +68,35 @@ export default function Hero() {
             احسب تحويلك <ArrowLeft size={16} />
           </a>
           <a
-            href={whatsappLink("مرحباً Jodatransfer، عندي استفسار عن تحويل أموال.")}
+            href={whatsappLink(MESSAGES.general)}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-ghost px-8 py-3.5 text-sm"
+            className="btn-whatsapp px-8 py-3.5 text-sm"
           >
-            <MessageCircle size={16} className="text-primary" /> تواصل عبر واتساب
+            <WhatsAppIcon size={18} /> تواصل عبر واتساب
           </a>
         </motion.div>
 
         {/* Supported currencies */}
-        <motion.div {...rise(0.25)} className="mt-8 flex flex-wrap justify-center gap-2" dir="ltr">
-          {Object.values(CURRENCIES).map((c) => (
-            <span
-              key={c.code}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface px-3 py-1 font-mono text-xs font-semibold text-ink shadow-soft"
-            >
-              <span className="text-sm">{c.flag}</span>
-              {c.code}
-            </span>
-          ))}
+        <motion.div {...rise(0.25)} className="mt-8 flex flex-col items-center gap-2.5">
+          <p className="text-[11px] font-medium text-subtle">اختر عملتك وابدأ الحساب</p>
+          <div className="flex flex-wrap justify-center gap-2" dir="ltr">
+            {Object.values(CURRENCIES).map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent<SelectPairDetail>(SELECT_PAIR_EVENT, { detail: { from: c.code as CurrencyCode } })
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface px-3 py-1.5 font-mono text-xs font-semibold text-ink shadow-soft transition-all hover:-translate-y-px hover:border-primary/60 hover:text-primary"
+              >
+                <span className="text-sm">{c.flag}</span>
+                {c.code}
+              </button>
+            ))}
+          </div>
         </motion.div>
 
         <motion.div

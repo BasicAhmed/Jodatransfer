@@ -44,7 +44,7 @@ export default function WhyChoose() {
           {ITEMS.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-primary/50"
+              className="card-sm p-6 transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-card"
             >
               <div className="inline-flex rounded-xl bg-primary/10 p-2.5 text-primary">
                 <Icon size={20} />
