@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, ShieldCheck, Zap, Headphones, Megaphone } from "lucide-react";
 import WhatsAppIcon from "./WhatsAppIcon";
@@ -33,32 +32,9 @@ export default function Hero() {
       </div>
 
       <div className="container-page flex flex-col items-center pb-16 pt-14 text-center sm:pb-24 sm:pt-20">
-        {/* Brand lockup: Joda · logo · Transfer */}
-        <motion.div
-          {...rise(0)}
-          dir="ltr"
-          className="flex items-center justify-center gap-[clamp(0.6rem,3vw,1.25rem)] font-display font-extrabold leading-none tracking-tight text-[clamp(2rem,9.5vw,3.75rem)]"
-        >
-          <span className="text-ink">Joda</span>
-          <span className="relative shrink-0">
-            <span aria-hidden="true" className="absolute inset-0 -z-10 scale-150 rounded-full bg-primary/30 blur-2xl" />
-            <span className="block rounded-[1.4rem] border border-white/10 bg-brand-navy p-2.5 shadow-glow-lg">
-              <Image
-                src="/logo-icon.png"
-                alt="Jodatransfer"
-                width={68}
-                height={80}
-                className="h-[clamp(3.25rem,15vw,4.5rem)] w-auto"
-                priority
-              />
-            </span>
-          </span>
-          <span className="text-gradient">Transfer</span>
-        </motion.div>
-
         <motion.p
           {...rise(0.05)}
-          className="mt-7 inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/70 px-3.5 py-1.5 text-xs font-semibold text-muted shadow-soft backdrop-blur"
+          className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/70 px-3.5 py-1.5 text-xs font-semibold text-muted shadow-soft backdrop-blur"
         >
           <span className="relative flex size-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
