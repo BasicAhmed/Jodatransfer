@@ -1,5 +1,5 @@
 {
-  "note": "PLACEHOLDER MARKET PRICES — replace with real figures in /admin (or run 'update now') before launch. Each pair has ONE market price, quoted as units of the first currency per 1 unit of the second (e.g. SDG/MYR = 1590 means 1590 SDG = 1 MYR). Both directions are derived automatically with the margin set in /admin.",
+  "note": "PLACEHOLDER MARKET PRICES — tap 'تحديث الآن' in /admin before launch to load live prices. Each pair has ONE market price, quoted as units of the first currency per 1 unit of the second (e.g. SDG/MYR = 1590 means 1590 SDG = 1 MYR). Both directions are derived automatically with the margin set in /admin.",
   "rates": [
     {
       "from": "SDG",
@@ -12,14 +12,9 @@
       "marketPrice": 128
     },
     {
-      "from": "RUB",
-      "to": "USDT",
-      "marketPrice": 82
-    },
-    {
       "from": "SDG",
-      "to": "USDT",
-      "marketPrice": 6250
+      "to": "SAR",
+      "marketPrice": 1667
     },
     {
       "from": "SDG",
@@ -28,8 +23,73 @@
     },
     {
       "from": "SDG",
+      "to": "USDT",
+      "marketPrice": 6250
+    },
+    {
+      "from": "EGP",
+      "to": "MYR",
+      "marketPrice": 11.5476
+    },
+    {
+      "from": "MYR",
       "to": "SAR",
-      "marketPrice": 1667
+      "marketPrice": 1.12
+    },
+    {
+      "from": "MYR",
+      "to": "AED",
+      "marketPrice": 1.1436
+    },
+    {
+      "from": "MYR",
+      "to": "USDT",
+      "marketPrice": 4.2
+    },
+    {
+      "from": "EGP",
+      "to": "SAR",
+      "marketPrice": 12.9333
+    },
+    {
+      "from": "EGP",
+      "to": "AED",
+      "marketPrice": 13.2063
+    },
+    {
+      "from": "EGP",
+      "to": "USDT",
+      "marketPrice": 48.5
+    },
+    {
+      "from": "RUB",
+      "to": "USDT",
+      "marketPrice": 82
+    },
+    {
+      "from": "RUB",
+      "to": "EGP",
+      "marketPrice": 1.6907
+    },
+    {
+      "from": "RUB",
+      "to": "SAR",
+      "marketPrice": 21.8667
+    },
+    {
+      "from": "RUB",
+      "to": "AED",
+      "marketPrice": 22.3281
+    },
+    {
+      "from": "AED",
+      "to": "USDT",
+      "marketPrice": 3.6725
+    },
+    {
+      "from": "SAR",
+      "to": "USDT",
+      "marketPrice": 3.75
     }
   ]
 }

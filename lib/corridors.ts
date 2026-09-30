@@ -28,12 +28,29 @@ export interface CurrencyPair {
  *  better" distinction. Add a currency's whole route list here once; both
  *  directions become available automatically. */
 export const PAIRS: CurrencyPair[] = [
+  // Sudanese pound
   { a: "SDG", b: "MYR" },
   { a: "SDG", b: "EGP" },
-  { a: "RUB", b: "USDT" },
-  { a: "SDG", b: "USDT" },
-  { a: "SDG", b: "AED" },
   { a: "SDG", b: "SAR" },
+  { a: "SDG", b: "AED" },
+  { a: "SDG", b: "USDT" },
+  // Malaysian ringgit
+  { a: "EGP", b: "MYR" },
+  { a: "MYR", b: "SAR" },
+  { a: "MYR", b: "AED" },
+  { a: "MYR", b: "USDT" },
+  // Egyptian pound
+  { a: "EGP", b: "SAR" },
+  { a: "EGP", b: "AED" },
+  { a: "EGP", b: "USDT" },
+  // Russian rouble
+  { a: "RUB", b: "USDT" },
+  { a: "RUB", b: "EGP" },
+  { a: "RUB", b: "SAR" },
+  { a: "RUB", b: "AED" },
+  // Gulf ↔ USDT
+  { a: "AED", b: "USDT" },
+  { a: "SAR", b: "USDT" },
 ];
 
 export function findPair(x: CurrencyCode, y: CurrencyCode): CurrencyPair | undefined {

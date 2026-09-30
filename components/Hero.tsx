@@ -77,8 +77,8 @@ export default function Hero() {
         </motion.h1>
 
         <motion.p {...rise(0.15)} className="mt-5 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
-          من الجنيه السوداني إلى ماليزيا ومصر والإمارات والسعودية و USDT والعكس، وكمان الروبل مقابل USDT —
-          بسعر واضح وبدون جرجرة.
+          حوّل بين الجنيه السوداني والرنقت الماليزي والجنيه المصري والريال السعودي والدرهم الإماراتي
+          والروبل الروسي و USDT — في الاتجاهين، بسعر واضح وبدون جرجرة.
         </motion.p>
 
         <motion.div {...rise(0.2)} className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
