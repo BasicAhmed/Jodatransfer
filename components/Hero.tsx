@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShieldCheck, Zap, Headphones } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Zap, Headphones, Megaphone } from "lucide-react";
 import WhatsAppIcon from "./WhatsAppIcon";
 import { SELECT_PAIR_EVENT, type SelectPairDetail } from "./Calculator";
 import { MESSAGES } from "@/lib/whatsapp";
@@ -22,7 +22,7 @@ const STATS = [
 ];
 
 export default function Hero() {
-  const { wa } = useContact();
+  const { wa, channel } = useContact();
   return (
     <section id="top" className="relative overflow-hidden">
       {/* Backdrop: brand glow + faint dot grid that fades out */}
@@ -33,11 +33,27 @@ export default function Hero() {
       </div>
 
       <div className="container-page flex flex-col items-center pb-16 pt-14 text-center sm:pb-24 sm:pt-20">
-        <motion.div {...rise(0)} className="relative">
-          <div aria-hidden="true" className="absolute inset-0 -z-10 scale-150 rounded-full bg-primary/30 blur-2xl" />
-          <div className="rounded-[1.6rem] border border-white/10 bg-brand-navy p-3 shadow-glow-lg">
-            <Image src="/logo-icon.png" alt="" width={68} height={80} className="h-16 w-auto" priority />
-          </div>
+        {/* Brand lockup: Joda · logo · Transfer */}
+        <motion.div
+          {...rise(0)}
+          dir="ltr"
+          className="flex items-center justify-center gap-[clamp(0.6rem,3vw,1.25rem)] font-display font-extrabold leading-none tracking-tight text-[clamp(2rem,9.5vw,3.75rem)]"
+        >
+          <span className="text-ink">Joda</span>
+          <span className="relative shrink-0">
+            <span aria-hidden="true" className="absolute inset-0 -z-10 scale-150 rounded-full bg-primary/30 blur-2xl" />
+            <span className="block rounded-[1.4rem] border border-white/10 bg-brand-navy p-2.5 shadow-glow-lg">
+              <Image
+                src="/logo-icon.png"
+                alt="Jodatransfer"
+                width={68}
+                height={80}
+                className="h-[clamp(3.25rem,15vw,4.5rem)] w-auto"
+                priority
+              />
+            </span>
+          </span>
+          <span className="text-gradient">Transfer</span>
         </motion.div>
 
         <motion.p
@@ -77,6 +93,16 @@ export default function Hero() {
           >
             <WhatsAppIcon size={18} /> تواصل عبر واتساب
           </a>
+          {channel && (
+            <a
+              href={channel}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-whatsapp/40 bg-whatsapp/10 px-8 py-3.5 text-sm font-bold text-ink shadow-soft transition-all hover:-translate-y-px hover:border-whatsapp/70 hover:bg-whatsapp/15"
+            >
+              <Megaphone size={17} className="text-whatsapp" /> قناة الواتساب للعروض
+            </a>
+          )}
         </motion.div>
 
         {/* Supported currencies */}
