@@ -92,6 +92,16 @@ export default function AdminLogin() {
           </button>
         </form>
       </div>
+
+      <a
+        href="https://ninotechy.com"
+        target="_blank"
+        rel="noopener"
+        dir="ltr"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[11px] font-medium text-subtle/80 transition-colors hover:text-ink"
+      >
+        By <span className="font-bold text-muted">Nino Techy</span>
+      </a>
     </div>
   );
 }

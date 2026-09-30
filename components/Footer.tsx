@@ -44,6 +44,19 @@ export default function Footer() {
           © {new Date().getFullYear()} Jodatransfer. الأسعار المعروضة تقريبية ويتم تأكيدها وقت الطلب.
         </p>
       </div>
+
+      <div className="container-page mt-6 flex justify-center border-t border-border/40 pt-5">
+        <a
+          href="https://ninotechy.com"
+          target="_blank"
+          rel="noopener"
+          dir="ltr"
+          className="group inline-flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-subtle/80 transition-colors hover:text-ink"
+        >
+          By
+          <span className="font-bold text-muted transition-colors group-hover:text-primary">Nino Techy</span>
+        </a>
+      </div>
     </footer>
   );
 }
