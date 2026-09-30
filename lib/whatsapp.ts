@@ -1,5 +1,5 @@
 /** Fallback only — the live number comes from /admin → التواصل (settings/contact). */
-export const WHATSAPP_NUMBER = "97451131080";
+export const WHATSAPP_NUMBER = "201006949938";
 
 /** "+60 12-345 6789" → "60123456789" (the format wa.me needs). */
 export function waDigits(number: string) {

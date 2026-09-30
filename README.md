@@ -52,7 +52,7 @@ seed file if a corridor is missing or Firestore is unreachable.
 ## 3. Update your brand details
 
 - **WhatsApp number**: `lib/whatsapp.ts` → `WHATSAPP_NUMBER` (currently
-  `97451131080`, international format, no `+` or spaces).
+  `201006949938`, international format, no `+` or spaces).
 - **Email / hours**: `components/Contact.tsx`.
 - **Reviews**: `components/Reviews.tsx` — swap in real testimonials once you
   have them.

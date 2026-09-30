@@ -127,7 +127,7 @@ export interface ContactSettings {
 }
 
 export const DEFAULT_CONTACT: ContactSettings = {
-  whatsapp: "+974 5113 1080",
+  whatsapp: "+20 100 694 9938",
   channel: "",
   email: "hello@jodatransfer.com",
   hours: "السبت–الخميس، 9:00–22:00",
